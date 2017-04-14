@@ -26,7 +26,6 @@ import gov.samhsa.c2s.dss.service.document.redact.impl.postredactionlevel.RuleEx
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
 import gov.samhsa.c2s.dss.service.metadata.MetadataGeneratorImpl;
 import org.apache.commons.io.FileUtils;
-import org.apache.xml.security.encryption.XMLEncryptionException;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;

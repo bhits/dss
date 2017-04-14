@@ -10,6 +10,8 @@ import gov.samhsa.c2s.common.log.Logger;
 import gov.samhsa.c2s.common.log.LoggerFactory;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
 import gov.samhsa.c2s.dss.config.RedactionHandlerIdentityConfig;
+import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
+import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryResponseDto;
 import gov.samhsa.c2s.dss.service.document.dto.RedactedDocument;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 
@@ -84,6 +86,9 @@ public class DocumentRedactorImpl implements DocumentRedactor {
     @Autowired
     private Set<AbstractPostRedactionLevelRedactionHandler> postRedactionLevelRedactionHandlers;
 
+    @Autowired
+    private ValueSetService valueSetService;
+
     public DocumentRedactorImpl() {
     }
 
@@ -93,6 +98,7 @@ public class DocumentRedactorImpl implements DocumentRedactor {
      * @param marshaller                          the marshaller
      * @param documentXmlConverter                the document xml converter
      * @param documentAccessor                    the document accessor
+     * @param valueSetService                     the value set service
      * @param documentLevelRedactionHandlers      the document level redaction handlers
      * @param obligationLevelRedactionHandlers    the obligation level redaction handlers
      * @param clinicalFactLevelRedactionHandlers  the clinical fact level redaction handlers
@@ -103,6 +109,7 @@ public class DocumentRedactorImpl implements DocumentRedactor {
             SimpleMarshaller marshaller,
             DocumentXmlConverter documentXmlConverter,
             DocumentAccessor documentAccessor,
+            ValueSetService valueSetService,
             Set<AbstractDocumentLevelRedactionHandler> documentLevelRedactionHandlers,
             Set<AbstractObligationLevelRedactionHandler> obligationLevelRedactionHandlers,
             Set<AbstractClinicalFactLevelRedactionHandler> clinicalFactLevelRedactionHandlers,
@@ -111,6 +118,7 @@ public class DocumentRedactorImpl implements DocumentRedactor {
         this.marshaller = marshaller;
         this.documentXmlConverter = documentXmlConverter;
         this.documentAccessor = documentAccessor;
+        this.valueSetService = valueSetService;
         this.documentLevelRedactionHandlers = documentLevelRedactionHandlers;
         this.obligationLevelRedactionHandlers = obligationLevelRedactionHandlers;
         this.clinicalFactLevelRedactionHandlers = clinicalFactLevelRedactionHandlers;
@@ -207,8 +215,8 @@ public class DocumentRedactorImpl implements DocumentRedactor {
      * FactModel)
      */
     @Override
-    public RedactedDocument redactDocument(String document,
-                                           RuleExecutionContainer ruleExecutionContainer, FactModel factModel) {
+    public RedactedDocument redactDocument(String document, RuleExecutionContainer ruleExecutionContainer, FactModel factModel) {
+        List<ValueSetCategoryResponseDto> allValueSetCategoriesList = valueSetService.getAllValueSetCategories();
 
         String tryPolicyDocument = null;
         RedactionHandlerResult combinedResults;

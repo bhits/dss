@@ -11,7 +11,7 @@ import gov.samhsa.c2s.common.marshaller.SimpleMarshallerImpl;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetServiceImplMock;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ConceptCodeAndCodeSystemOidDto;
-import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetQueryDto;
+import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryMapResponseDto;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractClinicalFactLevelRedactionHandler;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractDocumentLevelRedactionHandler;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractObligationLevelRedactionHandler;
@@ -261,7 +261,7 @@ public class DocumentRedactorImplTest {
                         documentAccessor));
 
         documentRedactor = new DocumentRedactorImpl(marshaller,
-                documentXmlConverterSpy, documentAccessorMock,
+                documentXmlConverterSpy, documentAccessorMock, valueSetService,
                 documentLevelRedactionHandlers, obligationLevelChain,
                 clinicalFactLevelChain, postRedactionChain);
     }
@@ -1138,7 +1138,7 @@ public class DocumentRedactorImplTest {
 
             final Set<String> valueSetCategories = valueSetService
                     .lookupValueSetCategories(Arrays.asList(new ConceptCodeAndCodeSystemOidDto(fact.getCode(), fact.getCodeSystem())))
-                    .stream().findAny().map(ValueSetQueryDto::getVsCategoryCodes).orElse(null);
+                    .stream().findAny().map(ValueSetCategoryMapResponseDto::getValueSetCategoryCodes).orElse(null);
             // Set retrieved value set categories to the clinical fact
             fact.setValueSetCategories(valueSetCategories);
         }

@@ -23,11 +23,9 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class AbstractRedactionHandler {
 
-    /**
-     * The document accessor.
-     */
     @Autowired
     protected DocumentAccessor documentAccessor;
+
     private Logger logger = LoggerFactory.getLogger(this);
 
     /**
@@ -40,8 +38,7 @@ public abstract class AbstractRedactionHandler {
         this.documentAccessor = documentAccessor;
     }
 
-    protected AbstractRedactionHandler() {
-    }
+    protected AbstractRedactionHandler() {}
 
     /**
      * Adds the nodes to list.
@@ -51,9 +48,7 @@ public abstract class AbstractRedactionHandler {
      * @param values      the values
      * @return the RedactionHandlerResult
      */
-    protected final RedactionHandlerResult addNodesToList(Document xmlDocument,
-                                                          String xPathExpr,
-                                                          String... values) {
+    protected final RedactionHandlerResult addNodesToList(Document xmlDocument, String xPathExpr, String... values) {
         try {
             Stream<Node> nodeStream = documentAccessor
                     .getNodeListAsStream(xmlDocument, xPathExpr, values);
@@ -141,8 +136,7 @@ public abstract class AbstractRedactionHandler {
                 fact.getValueSetCategories());
     }
 
-    protected final Optional<String> findMatchingCategoryAsOptional(XacmlResult xacmlResult,
-                                                                    ClinicalFact fact) {
+    protected final Optional<String> findMatchingCategoryAsOptional(XacmlResult xacmlResult, ClinicalFact fact) {
         return Optional.ofNullable(findMatchingCategory(xacmlResult, fact));
     }
 }

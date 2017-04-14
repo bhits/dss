@@ -14,7 +14,7 @@ import gov.samhsa.c2s.common.validation.XmlValidation;
 import gov.samhsa.c2s.common.validation.exception.XmlDocumentReadFailureException;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ConceptCodeAndCodeSystemOidDto;
-import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetQueryDto;
+import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryMapResponseDto;
 import gov.samhsa.c2s.dss.service.document.*;
 import gov.samhsa.c2s.dss.service.document.dto.RedactedDocument;
 import gov.samhsa.c2s.dss.service.document.template.CCDAVersion;
@@ -206,13 +206,13 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
                             .collect(Collectors.toList());
 
             // Get value set categories
-            final List<ValueSetQueryDto> valueSetCategories = valueSetService
+            final List<ValueSetCategoryMapResponseDto> valueSetCategories = valueSetService
                     .lookupValueSetCategories(conceptCodeAndCodeSystemOidDtoList);
             factModel.getClinicalFactList()
                     .stream()
                     .forEach(fact -> valueSetCategories.stream()
-                            .filter(dto -> fact.getCode().equals(dto.getConceptCode()) && fact.getCodeSystem().equals(dto.getCodeSystemOid()))
-                            .map(ValueSetQueryDto::getVsCategoryCodes)
+                            .filter(dto -> fact.getCode().equals(dto.getCodedConceptCode()) && fact.getCodeSystem().equals(dto.getCodeSystemOid()))
+                            .map(ValueSetCategoryMapResponseDto::getValueSetCategoryCodes)
                             .filter(Objects::nonNull)
                             .findAny().ifPresent(fact::setValueSetCategories));
 

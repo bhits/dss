@@ -5,14 +5,14 @@ import lombok.Data;
 @Data
 public class ConceptCodeAndCodeSystemOidDto {
 
-    private String conceptCode;
+    private String codedConceptCode;
     private String codeSystemOid;
 
     public ConceptCodeAndCodeSystemOidDto() {
     }
 
-    public ConceptCodeAndCodeSystemOidDto(String conceptCode, String codeSystemOid) {
-        this.conceptCode = conceptCode;
+    public ConceptCodeAndCodeSystemOidDto(String codedConceptCode, String codeSystemOid) {
+        this.codedConceptCode = codedConceptCode;
         this.codeSystemOid = codeSystemOid;
     }
 

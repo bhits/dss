@@ -96,7 +96,7 @@ public abstract class AbstractRedactionHandler {
                 .ifPresent(list -> list.forEach(this::nullSafeRemove));
     }
 
-    protected Node markRedactForTryPolicyIfElement(Node node) {
+    private Node markRedactForTryPolicyIfElement(Node node) {
         if (Node.ELEMENT_NODE == node.getNodeType()) {
             Element element = (Element) node;
             element.setAttribute("redact", "redact");
@@ -111,8 +111,7 @@ public abstract class AbstractRedactionHandler {
      * @param categories  the categories
      * @return the string
      */
-    protected final String containsAny(List<String> obligations,
-                                       Set<String> categories) {
+    private String containsAny(List<String> obligations, Set<String> categories) {
         if (obligations != null && categories != null) {
             for (String category : categories) {
                 if (obligations.contains(category)) {
@@ -130,10 +129,8 @@ public abstract class AbstractRedactionHandler {
      * @param fact        the fact
      * @return the string
      */
-    protected final String findMatchingCategory(XacmlResult xacmlResult,
-                                                ClinicalFact fact) {
-        return containsAny(xacmlResult.getPdpObligations(),
-                fact.getValueSetCategories());
+    private String findMatchingCategory(XacmlResult xacmlResult, ClinicalFact fact) {
+        return containsAny(xacmlResult.getPdpObligations(), fact.getValueSetCategories());
     }
 
     protected final Optional<String> findMatchingCategoryAsOptional(XacmlResult xacmlResult, ClinicalFact fact) {

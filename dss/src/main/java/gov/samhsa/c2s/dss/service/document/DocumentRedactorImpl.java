@@ -9,12 +9,12 @@ import gov.samhsa.c2s.common.document.converter.DocumentXmlConverter;
 import gov.samhsa.c2s.common.log.Logger;
 import gov.samhsa.c2s.common.log.LoggerFactory;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
+
 import gov.samhsa.c2s.dss.config.RedactionHandlerIdentityConfig;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryResponseDto;
 import gov.samhsa.c2s.dss.service.document.dto.RedactedDocument;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
-
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractClinicalFactLevelRedactionHandler;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractDocumentLevelRedactionHandler;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractObligationLevelRedactionHandler;

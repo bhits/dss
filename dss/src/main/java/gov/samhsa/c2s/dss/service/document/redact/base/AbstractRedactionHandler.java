@@ -38,7 +38,8 @@ public abstract class AbstractRedactionHandler {
         this.documentAccessor = documentAccessor;
     }
 
-    protected AbstractRedactionHandler() {}
+    protected AbstractRedactionHandler() {
+    }
 
     /**
      * Adds the nodes to list.

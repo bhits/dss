@@ -1,28 +1,3 @@
-/*******************************************************************************
- * Open Behavioral Health Information Technology Architecture (OBHITA.org)
- * <p/>
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- * * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- * * Neither the name of the <organization> nor the
- * names of its contributors may be used to endorse or promote products
- * derived from this software without specific prior written permission.
- * <p/>
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- ******************************************************************************/
 package gov.samhsa.c2s.dss.service.document.redact.impl.postredactionlevel;
 
 import gov.samhsa.c2s.brms.domain.FactModel;
@@ -33,6 +8,8 @@ import gov.samhsa.c2s.common.document.accessor.DocumentAccessorException;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.RedactionHandlerException;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractPostRedactionLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
@@ -49,34 +26,30 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
-/**
- * The Class DocumentCleanupForNoEntryAndNoSection.
- */
 @Service
 @ConfigurationProperties(prefix = "c2s.dss.redact")
-public class DocumentCleanupForNoEntryAndNoSection extends
-        AbstractPostRedactionLevelRedactionHandler {
+public class DocumentCleanupForNoEntryAndNoSection extends AbstractPostRedactionLevelRedactionHandler {
 
     /**
      * The Constant URN_HL7_V3.
      */
-    public static final String URN_HL7_V3 = "urn:hl7-org:v3";
+    private static final String URN_HL7_V3 = "urn:hl7-org:v3";
     /**
      * The Constant TAG_COMPONENT.
      */
-    public static final String TAG_COMPONENT = "component";
+    private static final String TAG_COMPONENT = "component";
     /**
      * The Constant TAG_SECTION.
      */
-    public static final String TAG_SECTION = "section";
+    private static final String TAG_SECTION = "section";
     /**
      * The Constant XPATH_NO_COMPONENT_IN_STRUCTURED_BODY.
      */
-    public static final String XPATH_NO_COMPONENT_IN_STRUCTURED_BODY = "/hl7:ClinicalDocument/hl7:component/hl7:structuredBody[not(hl7:component)]";
+    private static final String XPATH_NO_COMPONENT_IN_STRUCTURED_BODY = "/hl7:ClinicalDocument/hl7:component/hl7:structuredBody[not(hl7:component)]";
     /**
      * The Constant XPATH_SECTION_COMPONENT_WITH_NO_ENTRY.
      */
-    public static final String XPATH_SECTION_COMPONENT_WITH_NO_ENTRY = "/hl7:ClinicalDocument/hl7:component/hl7:structuredBody/hl7:component[hl7:section[not(hl7:entry)]]";
+    private static final String XPATH_SECTION_COMPONENT_WITH_NO_ENTRY = "/hl7:ClinicalDocument/hl7:component/hl7:structuredBody/hl7:component[hl7:section[not(hl7:entry)]]";
 
     private List<String> sectionWhiteList = new ArrayList<>();
 
@@ -92,10 +65,8 @@ public class DocumentCleanupForNoEntryAndNoSection extends
     }
 
     @Override
-    public void execute(Document xmlDocument, XacmlResult xacmlResult,
-                        FactModel factModel, Document factModelDocument,
-                        RuleExecutionContainer ruleExecutionContainer,
-                        RedactionHandlerResult preRedactionResults) {
+    public void execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
+                        RuleExecutionContainer ruleExecutionContainer, RedactionHandlerResult preRedactionResults, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
         try {
             // Clean up section components with no entries
             cleanUpSectionComponentsWithNoEntries(xmlDocument);

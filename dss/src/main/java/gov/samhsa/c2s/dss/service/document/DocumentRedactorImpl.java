@@ -1,30 +1,6 @@
-/*******************************************************************************
- * Open Behavioral Health Information Technology Architecture (OBHITA.org)
- * <p>
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- * * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- * * Neither the name of the <organization> nor the
- * names of its contributors may be used to endorse or promote products
- * derived from this software without specific prior written permission.
- * <p>
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- ******************************************************************************/
 package gov.samhsa.c2s.dss.service.document;
 
+import feign.FeignException;
 import gov.samhsa.c2s.brms.domain.FactModel;
 import gov.samhsa.c2s.brms.domain.RuleExecutionContainer;
 import gov.samhsa.c2s.brms.domain.XacmlResult;
@@ -34,11 +10,21 @@ import gov.samhsa.c2s.common.document.converter.DocumentXmlConverter;
 import gov.samhsa.c2s.common.log.Logger;
 import gov.samhsa.c2s.common.log.LoggerFactory;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
+
 import gov.samhsa.c2s.dss.config.RedactionHandlerIdentityConfig;
+import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
+import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryResponseDto;
 import gov.samhsa.c2s.dss.service.document.dto.RedactedDocument;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
-import gov.samhsa.c2s.dss.service.document.redact.base.*;
+import gov.samhsa.c2s.dss.service.document.redact.base.AbstractClinicalFactLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.base.AbstractDocumentLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.base.AbstractObligationLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.base.AbstractPostRedactionLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.base.AbstractRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
+
+import gov.samhsa.c2s.dss.service.exception.VssServiceUnreachableException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
@@ -48,10 +34,12 @@ import org.w3c.dom.NodeList;
 
 import javax.annotation.PostConstruct;
 import javax.xml.xpath.XPathExpressionException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class DocumentRedactorImpl implements DocumentRedactor {
@@ -104,6 +92,9 @@ public class DocumentRedactorImpl implements DocumentRedactor {
     @Autowired
     private Set<AbstractPostRedactionLevelRedactionHandler> postRedactionLevelRedactionHandlers;
 
+    @Autowired
+    private ValueSetService valueSetService;
+
     public DocumentRedactorImpl() {
     }
 
@@ -113,6 +104,7 @@ public class DocumentRedactorImpl implements DocumentRedactor {
      * @param marshaller                          the marshaller
      * @param documentXmlConverter                the document xml converter
      * @param documentAccessor                    the document accessor
+     * @param valueSetService                     the value set service
      * @param documentLevelRedactionHandlers      the document level redaction handlers
      * @param obligationLevelRedactionHandlers    the obligation level redaction handlers
      * @param clinicalFactLevelRedactionHandlers  the clinical fact level redaction handlers
@@ -123,6 +115,7 @@ public class DocumentRedactorImpl implements DocumentRedactor {
             SimpleMarshaller marshaller,
             DocumentXmlConverter documentXmlConverter,
             DocumentAccessor documentAccessor,
+            ValueSetService valueSetService,
             Set<AbstractDocumentLevelRedactionHandler> documentLevelRedactionHandlers,
             Set<AbstractObligationLevelRedactionHandler> obligationLevelRedactionHandlers,
             Set<AbstractClinicalFactLevelRedactionHandler> clinicalFactLevelRedactionHandlers,
@@ -131,6 +124,7 @@ public class DocumentRedactorImpl implements DocumentRedactor {
         this.marshaller = marshaller;
         this.documentXmlConverter = documentXmlConverter;
         this.documentAccessor = documentAccessor;
+        this.valueSetService = valueSetService;
         this.documentLevelRedactionHandlers = documentLevelRedactionHandlers;
         this.obligationLevelRedactionHandlers = obligationLevelRedactionHandlers;
         this.clinicalFactLevelRedactionHandlers = clinicalFactLevelRedactionHandlers;
@@ -227,12 +221,34 @@ public class DocumentRedactorImpl implements DocumentRedactor {
      * FactModel)
      */
     @Override
-    public RedactedDocument redactDocument(String document,
-                                           RuleExecutionContainer ruleExecutionContainer, FactModel factModel) {
-
+    public RedactedDocument redactDocument(String document, RuleExecutionContainer ruleExecutionContainer, FactModel factModel) {
         String tryPolicyDocument = null;
         RedactionHandlerResult combinedResults;
         final XacmlResult xacmlResult = factModel.getXacmlResult();
+
+        Set<String> xacmlPdpObligations = new HashSet<>(xacmlResult.getPdpObligations());
+
+        Set<ValueSetCategoryResponseDto> allValueSetCategoryDtosSet = new HashSet<>();
+
+        try {
+            allValueSetCategoryDtosSet = new HashSet<>(valueSetService.getAllValueSetCategories());
+        } catch (FeignException e) {
+            logger.error("A FeignException occurred while trying to call valueSetService.getAllValueSetCategories.");
+            logger.debug("FeignException Details: " + e.getMessage());
+            logger.debug("FeignException Stack Trace: " + e.toString());
+
+            throw new VssServiceUnreachableException("Unable to contact Value Set Service endpoint");
+        }
+
+        Set<String> pdpObligationsComplementSet = new HashSet<>();
+
+        // Calculate the set difference (i.e. complement set)
+        pdpObligationsComplementSet.addAll(allValueSetCategoryDtosSet.stream()
+                .map(ValueSetCategoryResponseDto::getCode)
+                .filter(valSetCatCode -> !xacmlPdpObligations.contains(valSetCatCode))
+                .collect(Collectors.toList()));
+
+        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(pdpObligationsComplementSet);
 
         try {
             final Document xmlDocument = documentXmlConverter.loadDocument(document);
@@ -250,7 +266,7 @@ public class DocumentRedactorImpl implements DocumentRedactor {
             final RedactionHandlerResult obligationLevelResults = xacmlResult.getPdpObligations().stream()
                     .flatMap(obligation -> obligationLevelRedactionHandlers
                             .stream()
-                            .map(handler -> handler.execute(xmlDocument, xacmlResult, factModel, factModelDocument, ruleExecutionContainer, obligation)))
+                            .map(handler -> handler.execute(xmlDocument, xacmlResult, factModel, factModelDocument, ruleExecutionContainer, obligation, pdpObligationsComplementSetDto)))
                     .reduce(RedactionHandlerResult::concat)
                     .orElseGet(RedactionHandlerResult::new);
 
@@ -258,7 +274,7 @@ public class DocumentRedactorImpl implements DocumentRedactor {
             final RedactionHandlerResult clinicalFactLevelResults = factModel.getClinicalFactList().stream()
                     .flatMap(fact -> clinicalFactLevelRedactionHandlers
                             .stream()
-                            .map(handler -> handler.execute(xmlDocument, xacmlResult, factModel, factModelDocument, fact, ruleExecutionContainer)))
+                            .map(handler -> handler.execute(xmlDocument, xacmlResult, factModel, factModelDocument, fact, ruleExecutionContainer, pdpObligationsComplementSetDto)))
                     .reduce(RedactionHandlerResult::concat)
                     .orElseGet(RedactionHandlerResult::new);
 
@@ -277,7 +293,7 @@ public class DocumentRedactorImpl implements DocumentRedactor {
             redactNodesIfNotNull(combinedResults.getRedactNodeList());
 
             // POST REDACTION LEVEL REDACTION HANDLERS
-            postRedactionLevelRedactionHandlers.forEach(handler -> handler.execute(xmlDocument, xacmlResult, factModel, factModelDocument, ruleExecutionContainer, combinedResults));
+            postRedactionLevelRedactionHandlers.forEach(handler -> handler.execute(xmlDocument, xacmlResult, factModel, factModelDocument, ruleExecutionContainer, combinedResults, pdpObligationsComplementSetDto));
 
             // Convert redacted document to xml string
             document = documentXmlConverter.convertXmlDocToString(xmlDocument);

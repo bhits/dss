@@ -12,9 +12,13 @@ import gov.samhsa.c2s.common.log.Logger;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerException;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerImpl;
+import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
+import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetServiceImplMock;
+import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryResponseDto;
 import gov.samhsa.c2s.dss.service.document.EmbeddedClinicalDocumentExtractor;
 import gov.samhsa.c2s.dss.service.document.EmbeddedClinicalDocumentExtractorImpl;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,8 +29,11 @@ import org.w3c.dom.Node;
 
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -48,6 +55,8 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
     private DocumentXmlConverter documentXmlConverter;
     private EmbeddedClinicalDocumentExtractor embeddedClinicalDocumentExtractor;
 
+    private static ValueSetService valueSetService;
+
     private DocumentCleanupForNoEntryAndNoSection sut;
 
     @Before
@@ -56,8 +65,8 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
         marshaller = new SimpleMarshallerImpl();
         documentAccessor = new DocumentAccessorImpl();
         documentXmlConverter = new DocumentXmlConverterImpl();
-        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl(
-                documentXmlConverter, documentAccessor);
+        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl(documentXmlConverter, documentAccessor);
+        valueSetService = new ValueSetServiceImplMock(fileReader);
         sut = new DocumentCleanupForNoEntryAndNoSection(documentAccessor);
     }
 
@@ -81,11 +90,12 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
                 .loadDocument(factmodelXml);
         final FactModel factModel = marshaller.unmarshalFromXml(
                 FactModel.class, factmodelXml);
+        final PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto();
         RedactionHandlerResult preRedactionResults = new RedactionHandlerResult();
 
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
 
         // Assert
         assertEquals(1,
@@ -124,11 +134,12 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
                 .loadDocument(factmodelXml);
         final FactModel factModel = marshaller.unmarshalFromXml(
                 FactModel.class, factmodelXml);
+        final PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto();
         RedactionHandlerResult preRedactionResults = new RedactionHandlerResult();
 
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
 
         // Assert
         assertEquals(1,
@@ -171,6 +182,8 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
                 FactModel.class, factmodelXml);
         final Node nodeMock = mock(Node.class);
         final Node parentNodeMock = mock(Node.class);
+        final PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto();
+
         when(nodeMock.getParentNode()).thenReturn(parentNodeMock);
         doThrow(NullPointerException.class).when(parentNodeMock).removeChild(nodeMock);
         when(documentAccessorMock.getNodeListAsStream(eq(c32Document), anyString()))
@@ -181,7 +194,7 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
 
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
 
         // Assert
         assertEquals(2,
@@ -227,9 +240,22 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
                 .thenReturn(Optional.empty());
         RedactionHandlerResult preRedactionResults = new RedactionHandlerResult();
 
+        Set<ValueSetCategoryResponseDto> allValueSetCategoryDtosSet = new HashSet<>(valueSetService.getAllValueSetCategories());
+        Set<String> xacmlPdpObligations = new HashSet<>(factModel.getXacmlResult().getPdpObligations());
+
+        Set<String> pdpObligationsComplementSet = new HashSet<>();
+
+        // Calculate the set difference (i.e. complement set)
+        pdpObligationsComplementSet.addAll(allValueSetCategoryDtosSet.stream()
+                .map(ValueSetCategoryResponseDto::getCode)
+                .filter(valSetCatCode -> !xacmlPdpObligations.contains(valSetCatCode))
+                .collect(Collectors.toList()));
+
+        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(pdpObligationsComplementSet);
+
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
 
         // Assert
         assertEquals(2,

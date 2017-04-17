@@ -1,28 +1,3 @@
-/*******************************************************************************
- * Open Behavioral Health Information Technology Architecture (OBHITA.org)
- * <p>
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- * * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- * * Neither the name of the <organization> nor the
- * names of its contributors may be used to endorse or promote products
- * derived from this software without specific prior written permission.
- * <p>
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- ******************************************************************************/
 package gov.samhsa.c2s.dss.service.document.redact.base;
 
 import gov.samhsa.c2s.brms.domain.ClinicalFact;
@@ -32,12 +7,15 @@ import gov.samhsa.c2s.common.log.Logger;
 import gov.samhsa.c2s.common.log.LoggerFactory;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.RedactionHandlerException;
+
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import javax.xml.xpath.XPathExpressionException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -46,16 +24,11 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
-/**
- * The Class AbstractRedactionHandler.
- */
 public abstract class AbstractRedactionHandler {
 
-    /**
-     * The document accessor.
-     */
     @Autowired
     protected DocumentAccessor documentAccessor;
+
     private Logger logger = LoggerFactory.getLogger(this);
 
     /**
@@ -79,9 +52,7 @@ public abstract class AbstractRedactionHandler {
      * @param values      the values
      * @return the RedactionHandlerResult
      */
-    protected final RedactionHandlerResult addNodesToList(Document xmlDocument,
-                                                          String xPathExpr,
-                                                          String... values) {
+    protected final RedactionHandlerResult addNodesToList(Document xmlDocument, String xPathExpr, String... values) {
         try {
             Stream<Node> nodeStream = documentAccessor
                     .getNodeListAsStream(xmlDocument, xPathExpr, values);
@@ -129,7 +100,7 @@ public abstract class AbstractRedactionHandler {
                 .ifPresent(list -> list.forEach(this::nullSafeRemove));
     }
 
-    protected Node markRedactForTryPolicyIfElement(Node node) {
+    private Node markRedactForTryPolicyIfElement(Node node) {
         if (Node.ELEMENT_NODE == node.getNodeType()) {
             Element element = (Element) node;
             element.setAttribute("redact", "redact");
@@ -138,39 +109,33 @@ public abstract class AbstractRedactionHandler {
     }
 
     /**
-     * Contains any.
+     * Contains all.
      *
-     * @param obligations the obligations
-     * @param categories  the categories
-     * @return the string
+     * @param categoriesToRedact the list of categories to be redacted based on patient consent
+     *                           (Note: This set of categories is the complement set of the categories from the patient's actual consent)
+     * @param factCategories     the set of categories associated with the particular clinical fact
+     * @return a set of categories associated with the particular clinical fact which are triggering redaction of the fact
      */
-    protected final String containsAny(List<String> obligations,
-                                       Set<String> categories) {
-        if (obligations != null && categories != null) {
-            for (String category : categories) {
-                if (obligations.contains(category)) {
-                    return category;
-                }
+    private Set<String> containsAll(List<String> categoriesToRedact, Set<String> factCategories) {
+        Set<String> factCategoriesTriggeringRedaction = new HashSet<>();
+
+        if ((categoriesToRedact != null) && (factCategories != null)) {
+            if (categoriesToRedact.containsAll(factCategories)) {
+                factCategoriesTriggeringRedaction = new HashSet<>(factCategories);
             }
         }
-        return null;
+
+        return factCategoriesTriggeringRedaction;
     }
 
     /**
-     * Find matching category.
+     * Find matching categories.
      *
-     * @param xacmlResult the xacml result
-     * @param fact        the fact
-     * @return the string
+     * @param pdpObligationsComplementSet the pdpObligationsComplementSet
+     * @param fact                        the fact
+     * @return a set of categories associated with the particular clinical fact which are triggering redaction of the fact
      */
-    protected final String findMatchingCategory(XacmlResult xacmlResult,
-                                                ClinicalFact fact) {
-        return containsAny(xacmlResult.getPdpObligations(),
-                fact.getValueSetCategories());
-    }
-
-    protected final Optional<String> findMatchingCategoryAsOptional(XacmlResult xacmlResult,
-                                                                    ClinicalFact fact) {
-        return Optional.ofNullable(findMatchingCategory(xacmlResult, fact));
+    protected Set<String> findMatchingCategories(PdpObligationsComplementSetDto pdpObligationsComplementSet, ClinicalFact fact) {
+        return containsAll(pdpObligationsComplementSet.getAsListPdpObligationsComplementSet(), fact.getValueSetCategories());
     }
 }

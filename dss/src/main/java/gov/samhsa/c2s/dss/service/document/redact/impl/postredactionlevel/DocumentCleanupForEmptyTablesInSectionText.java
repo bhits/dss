@@ -8,6 +8,8 @@ import gov.samhsa.c2s.common.document.accessor.DocumentAccessorException;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.RedactionHandlerException;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractPostRedactionLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
@@ -15,8 +17,8 @@ import org.w3c.dom.Document;
 @Service
 public class DocumentCleanupForEmptyTablesInSectionText extends AbstractPostRedactionLevelRedactionHandler {
 
-    public static final String XPATH_SECTION_TEXT_TABLE_WITH_NO_TBODY = "//hl7:structuredBody//hl7:section/hl7:text/hl7:table[not(hl7:tbody)]";
-    public static final String XPATH_SECTION_TEXT_TABLE_WITH_NO_TR_IN_TBODY = "//hl7:structuredBody//hl7:section/hl7:text/hl7:table[hl7:tbody[not(hl7:tr)]]";
+    static final String XPATH_SECTION_TEXT_TABLE_WITH_NO_TBODY = "//hl7:structuredBody//hl7:section/hl7:text/hl7:table[not(hl7:tbody)]";
+    static final String XPATH_SECTION_TEXT_TABLE_WITH_NO_TR_IN_TBODY = "//hl7:structuredBody//hl7:section/hl7:text/hl7:table[hl7:tbody[not(hl7:tr)]]";
 
     @Autowired
     public DocumentCleanupForEmptyTablesInSectionText(DocumentAccessor documentAccessor) {
@@ -24,7 +26,8 @@ public class DocumentCleanupForEmptyTablesInSectionText extends AbstractPostReda
     }
 
     @Override
-    public void execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument, RuleExecutionContainer ruleExecutionContainer, RedactionHandlerResult preRedactionResults) {
+    public void execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
+                        RuleExecutionContainer ruleExecutionContainer, RedactionHandlerResult preRedactionResults, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
         try {
             documentAccessor.getNodeListAsStream(xmlDocument, XPATH_SECTION_TEXT_TABLE_WITH_NO_TBODY)
                     .forEach(this::nullSafeRemove);

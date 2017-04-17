@@ -11,9 +11,13 @@ import gov.samhsa.c2s.common.filereader.FileReaderImpl;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerException;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerImpl;
+import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
+import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetServiceImplMock;
+import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryResponseDto;
 import gov.samhsa.c2s.dss.service.document.EmbeddedClinicalDocumentExtractor;
 import gov.samhsa.c2s.dss.service.document.EmbeddedClinicalDocumentExtractorImpl;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,6 +26,9 @@ import org.w3c.dom.Document;
 
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -38,6 +45,8 @@ public class RuleExecutionResponseMarkerForRedactedEntriesTest {
     private DocumentXmlConverter documentXmlConverter;
     private EmbeddedClinicalDocumentExtractor embeddedClinicalDocumentExtractor;
 
+    private static ValueSetService valueSetService;
+
     private RuleExecutionResponseMarkerForRedactedEntries sut;
 
     @Before
@@ -47,6 +56,7 @@ public class RuleExecutionResponseMarkerForRedactedEntriesTest {
         documentAccessor = new DocumentAccessorImpl();
         documentXmlConverter = new DocumentXmlConverterImpl();
         embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl(documentXmlConverter, documentAccessor);
+        valueSetService = new ValueSetServiceImplMock(fileReader);
         sut = new RuleExecutionResponseMarkerForRedactedEntries(documentAccessor);
     }
 
@@ -64,9 +74,22 @@ public class RuleExecutionResponseMarkerForRedactedEntriesTest {
         RedactionHandlerResult preRedactionResults = new RedactionHandlerResult();
         preRedactionResults.getRedactSectionCodesAndGeneratedEntryIds().add("d1e1406");
 
+        Set<ValueSetCategoryResponseDto> allValueSetCategoryDtosSet = new HashSet<>(valueSetService.getAllValueSetCategories());
+        Set<String> xacmlPdpObligations = new HashSet<>(factModel.getXacmlResult().getPdpObligations());
+
+        Set<String> pdpObligationsComplementSet = new HashSet<>();
+
+        // Calculate the set difference (i.e. complement set)
+        pdpObligationsComplementSet.addAll(allValueSetCategoryDtosSet.stream()
+                .map(ValueSetCategoryResponseDto::getCode)
+                .filter(valSetCatCode -> !xacmlPdpObligations.contains(valSetCatCode))
+                .collect(Collectors.toList()));
+
+        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(pdpObligationsComplementSet);
+
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
 
         // Assert
         assertEquals(2, ruleExecutionContainer.getSize());
@@ -88,9 +111,22 @@ public class RuleExecutionResponseMarkerForRedactedEntriesTest {
         RedactionHandlerResult preRedactionResults = new RedactionHandlerResult();
         preRedactionResults.getRedactSectionCodesAndGeneratedEntryIds().add("10160-0");
 
+        Set<ValueSetCategoryResponseDto> allValueSetCategoryDtosSet = new HashSet<>(valueSetService.getAllValueSetCategories());
+        Set<String> xacmlPdpObligations = new HashSet<>(factModel.getXacmlResult().getPdpObligations());
+
+        Set<String> pdpObligationsComplementSet = new HashSet<>();
+
+        // Calculate the set difference (i.e. complement set)
+        pdpObligationsComplementSet.addAll(allValueSetCategoryDtosSet.stream()
+                .map(ValueSetCategoryResponseDto::getCode)
+                .filter(valSetCatCode -> !xacmlPdpObligations.contains(valSetCatCode))
+                .collect(Collectors.toList()));
+
+        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(pdpObligationsComplementSet);
+
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
 
         // Assert
         assertEquals(2, ruleExecutionContainer.getSize());

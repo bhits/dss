@@ -442,6 +442,7 @@ public class DocumentRedactorImplTest {
         // null
         assertFalse(getSectionElementAsOptional(redactedC32, RESULTS_SECTION)
                 .isPresent());
+
         // RuleExecutionContainer has ETH and HIV sensitivities for these
         // observationIds, so the Problems section should exist, but these
         // entries should have been redacted.

@@ -240,16 +240,15 @@ public class DocumentRedactorImpl implements DocumentRedactor {
             throw new VssServiceUnreachableException("Unable to contact Value Set Service endpoint");
         }
 
-        Set<String> allValueSetCategoriesSet = new HashSet<>();
-        allValueSetCategoriesSet.addAll(allValueSetCategoryDtosSet
-                .stream()
-                .map(ValueSetCategoryResponseDto::getCode)
-                .collect(Collectors.toList()));
+        Set<String> pdpObligationsComplementSet = new HashSet<>();
 
         // Calculate the set difference (i.e. complement set)
-        allValueSetCategoriesSet.removeAll(xacmlPdpObligations);
+        pdpObligationsComplementSet.addAll(allValueSetCategoryDtosSet.stream()
+                .map(ValueSetCategoryResponseDto::getCode)
+                .filter(valSetCatCode -> !xacmlPdpObligations.contains(valSetCatCode))
+                .collect(Collectors.toList()));
 
-        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(allValueSetCategoriesSet);
+        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(pdpObligationsComplementSet);
 
         try {
             final Document xmlDocument = documentXmlConverter.loadDocument(document);

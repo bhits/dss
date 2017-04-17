@@ -76,16 +76,15 @@ public class DocumentCleanupForDocumentationOfNoServiceEventTest {
         Set<ValueSetCategoryResponseDto> allValueSetCategoryDtosSet = new HashSet<>(valueSetService.getAllValueSetCategories());
         Set<String> xacmlPdpObligations = new HashSet<>(factModel.getXacmlResult().getPdpObligations());
 
-        Set<String> allValueSetCategoriesSet = new HashSet<>();
-        allValueSetCategoriesSet.addAll(allValueSetCategoryDtosSet
-                .stream()
-                .map(ValueSetCategoryResponseDto::getCode)
-                .collect(Collectors.toList()));
+        Set<String> pdpObligationsComplementSet = new HashSet<>();
 
         // Calculate the set difference (i.e. complement set)
-        allValueSetCategoriesSet.removeAll(xacmlPdpObligations);
+        pdpObligationsComplementSet.addAll(allValueSetCategoryDtosSet.stream()
+                .map(ValueSetCategoryResponseDto::getCode)
+                .filter(valSetCatCode -> !xacmlPdpObligations.contains(valSetCatCode))
+                .collect(Collectors.toList()));
 
-        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(allValueSetCategoriesSet);
+        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(pdpObligationsComplementSet);
 
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
@@ -113,16 +112,15 @@ public class DocumentCleanupForDocumentationOfNoServiceEventTest {
         Set<ValueSetCategoryResponseDto> allValueSetCategoryDtosSet = new HashSet<>(valueSetService.getAllValueSetCategories());
         Set<String> xacmlPdpObligations = new HashSet<>(factModel.getXacmlResult().getPdpObligations());
 
-        Set<String> allValueSetCategoriesSet = new HashSet<>();
-        allValueSetCategoriesSet.addAll(allValueSetCategoryDtosSet
-                .stream()
-                .map(ValueSetCategoryResponseDto::getCode)
-                .collect(Collectors.toList()));
+        Set<String> pdpObligationsComplementSet = new HashSet<>();
 
         // Calculate the set difference (i.e. complement set)
-        allValueSetCategoriesSet.removeAll(xacmlPdpObligations);
+        pdpObligationsComplementSet.addAll(allValueSetCategoryDtosSet.stream()
+                .map(ValueSetCategoryResponseDto::getCode)
+                .filter(valSetCatCode -> !xacmlPdpObligations.contains(valSetCatCode))
+                .collect(Collectors.toList()));
 
-        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(allValueSetCategoriesSet);
+        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(pdpObligationsComplementSet);
 
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,

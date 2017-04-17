@@ -56,8 +56,7 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
         marshaller = new SimpleMarshallerImpl();
         documentAccessor = new DocumentAccessorImpl();
         documentXmlConverter = new DocumentXmlConverterImpl();
-        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl(
-                documentXmlConverter, documentAccessor);
+        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl(documentXmlConverter, documentAccessor);
         sut = new DocumentCleanupForNoEntryAndNoSection(documentAccessor);
     }
 

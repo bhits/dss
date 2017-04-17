@@ -12,6 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 import org.w3c.dom.Document;
 
+/* This class has been disabled by removing the @Service annotation.
+   Before re-enabling this class, it must be re-evaluated and refactored
+   to work with the new DSS share logic (i.e. positive consents instead
+   of negative consents).
+ */
 public class Section extends AbstractObligationLevelRedactionHandler {
 
     /**

@@ -15,8 +15,8 @@ import org.w3c.dom.Document;
 @Service
 public class DocumentCleanupForEmptyTablesInSectionText extends AbstractPostRedactionLevelRedactionHandler {
 
-    public static final String XPATH_SECTION_TEXT_TABLE_WITH_NO_TBODY = "//hl7:structuredBody//hl7:section/hl7:text/hl7:table[not(hl7:tbody)]";
-    public static final String XPATH_SECTION_TEXT_TABLE_WITH_NO_TR_IN_TBODY = "//hl7:structuredBody//hl7:section/hl7:text/hl7:table[hl7:tbody[not(hl7:tr)]]";
+    static final String XPATH_SECTION_TEXT_TABLE_WITH_NO_TBODY = "//hl7:structuredBody//hl7:section/hl7:text/hl7:table[not(hl7:tbody)]";
+    static final String XPATH_SECTION_TEXT_TABLE_WITH_NO_TR_IN_TBODY = "//hl7:structuredBody//hl7:section/hl7:text/hl7:table[hl7:tbody[not(hl7:tr)]]";
 
     @Autowired
     public DocumentCleanupForEmptyTablesInSectionText(DocumentAccessor documentAccessor) {

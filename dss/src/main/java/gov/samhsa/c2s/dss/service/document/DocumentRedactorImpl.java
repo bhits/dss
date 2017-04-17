@@ -1,5 +1,6 @@
 package gov.samhsa.c2s.dss.service.document;
 
+import feign.FeignException;
 import gov.samhsa.c2s.brms.domain.FactModel;
 import gov.samhsa.c2s.brms.domain.RuleExecutionContainer;
 import gov.samhsa.c2s.brms.domain.XacmlResult;
@@ -20,7 +21,10 @@ import gov.samhsa.c2s.dss.service.document.redact.base.AbstractDocumentLevelReda
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractObligationLevelRedactionHandler;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractPostRedactionLevelRedactionHandler;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
+
+import gov.samhsa.c2s.dss.service.exception.VssServiceUnreachableException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
@@ -30,10 +34,12 @@ import org.w3c.dom.NodeList;
 
 import javax.annotation.PostConstruct;
 import javax.xml.xpath.XPathExpressionException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class DocumentRedactorImpl implements DocumentRedactor {
@@ -216,11 +222,34 @@ public class DocumentRedactorImpl implements DocumentRedactor {
      */
     @Override
     public RedactedDocument redactDocument(String document, RuleExecutionContainer ruleExecutionContainer, FactModel factModel) {
-        List<ValueSetCategoryResponseDto> allValueSetCategoriesList = valueSetService.getAllValueSetCategories();
-
         String tryPolicyDocument = null;
         RedactionHandlerResult combinedResults;
         final XacmlResult xacmlResult = factModel.getXacmlResult();
+
+        Set<String> xacmlPdpObligations = new HashSet<>(xacmlResult.getPdpObligations());
+
+        Set<ValueSetCategoryResponseDto> allValueSetCategoryDtosSet = new HashSet<>();
+
+        try {
+            allValueSetCategoryDtosSet = new HashSet<>(valueSetService.getAllValueSetCategories());
+        } catch (FeignException e) {
+            logger.error("A FeignException occurred while trying to call valueSetService.getAllValueSetCategories.");
+            logger.debug("FeignException Details: " + e.getMessage());
+            logger.debug("FeignException Stack Trace: " + e.toString());
+
+            throw new VssServiceUnreachableException("Unable to contact Value Set Service endpoint");
+        }
+
+        Set<String> allValueSetCategoriesSet = new HashSet<>();
+        allValueSetCategoriesSet.addAll(allValueSetCategoryDtosSet
+                .stream()
+                .map(ValueSetCategoryResponseDto::getCode)
+                .collect(Collectors.toList()));
+
+        // Calculate the set difference (i.e. complement set)
+        allValueSetCategoriesSet.removeAll(xacmlPdpObligations);
+
+        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(allValueSetCategoriesSet);
 
         try {
             final Document xmlDocument = documentXmlConverter.loadDocument(document);

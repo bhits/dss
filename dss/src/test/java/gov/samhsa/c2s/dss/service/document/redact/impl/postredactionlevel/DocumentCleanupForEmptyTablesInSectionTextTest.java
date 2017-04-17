@@ -27,7 +27,7 @@ public class DocumentCleanupForEmptyTablesInSectionTextTest {
         assertEquals(0, documentAccessor.getNodeListAsStream(document, DocumentCleanupForEmptyTablesInSectionText.XPATH_SECTION_TEXT_TABLE_WITH_NO_TR_IN_TBODY).count());
 
         // Act
-        sut.execute(document, null, null, null, null, null);
+        sut.execute(document, null, null, null, null, null, null);
 
         // Assert
         assertEquals(0, documentAccessor.getNodeListAsStream(document, DocumentCleanupForEmptyTablesInSectionText.XPATH_SECTION_TEXT_TABLE_WITH_NO_TBODY).count());
@@ -43,7 +43,7 @@ public class DocumentCleanupForEmptyTablesInSectionTextTest {
         assertEquals(1, documentAccessor.getNodeListAsStream(document, DocumentCleanupForEmptyTablesInSectionText.XPATH_SECTION_TEXT_TABLE_WITH_NO_TR_IN_TBODY).count());
 
         // Act
-        sut.execute(document, null, null, null, null, null);
+        sut.execute(document, null, null, null, null, null, null);
 
         // Assert
         assertEquals(0, documentAccessor.getNodeListAsStream(document, DocumentCleanupForEmptyTablesInSectionText.XPATH_SECTION_TEXT_TABLE_WITH_NO_TBODY).count());
@@ -59,7 +59,7 @@ public class DocumentCleanupForEmptyTablesInSectionTextTest {
         assertEquals(1, documentAccessor.getNodeListAsStream(document, DocumentCleanupForEmptyTablesInSectionText.XPATH_SECTION_TEXT_TABLE_WITH_NO_TR_IN_TBODY).count());
 
         // Act
-        sut.execute(document, null, null, null, null, null);
+        sut.execute(document, null, null, null, null, null, null);
 
         // Assert
         assertEquals(0, documentAccessor.getNodeListAsStream(document, DocumentCleanupForEmptyTablesInSectionText.XPATH_SECTION_TEXT_TABLE_WITH_NO_TBODY).count());

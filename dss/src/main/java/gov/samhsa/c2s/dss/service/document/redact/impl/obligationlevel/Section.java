@@ -6,6 +6,8 @@ import gov.samhsa.c2s.brms.domain.XacmlResult;
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessor;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractObligationLevelRedactionHandler;
+
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 import org.w3c.dom.Document;
@@ -28,10 +30,8 @@ public class Section extends AbstractObligationLevelRedactionHandler {
     }
 
     @Override
-    public RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult,
-                                          FactModel factModel, Document factModelDocument,
-                                          RuleExecutionContainer ruleExecutionContainer,
-                                          String sectionLoincCode) {
+    public RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
+                                          RuleExecutionContainer ruleExecutionContainer, String sectionLoincCode, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
         // If there is any section with a code exists in pdp obligations,
         // add that section to redactNodeList.
         Assert.notNull(sectionLoincCode, this.getClass().getSimpleName()

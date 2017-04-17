@@ -7,9 +7,13 @@ import gov.samhsa.c2s.brms.domain.XacmlResult;
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessor;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractClinicalFactLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
+
+import java.util.Set;
 
 @Service
 public class Entry extends AbstractClinicalFactLevelRedactionHandler {
@@ -30,13 +34,9 @@ public class Entry extends AbstractClinicalFactLevelRedactionHandler {
     }
 
     @Override
-    public RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult,
-                                          FactModel factModel, Document factModelDocument, ClinicalFact fact,
-                                          RuleExecutionContainer ruleExecutionContainer) {
-        return findMatchingCategoryAsOptional(xacmlResult, fact)
-                .map(foundCategory -> addNodesToListForSensitiveCategory(
-                        foundCategory, xmlDocument,
-                        XPATH_ENTRY, fact.getEntry()))
-                .orElseGet(RedactionHandlerResult::new);
+    public RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
+                                          ClinicalFact fact, RuleExecutionContainer ruleExecutionContainer, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
+        Set<String> categoriesTriggeringRedaction = findMatchingCategories(pdpObligationsComplementSetDto, fact);
+        return addNodesToListForSensitiveCategory(categoriesTriggeringRedaction, xmlDocument, XPATH_ENTRY, fact.getEntry());
     }
 }

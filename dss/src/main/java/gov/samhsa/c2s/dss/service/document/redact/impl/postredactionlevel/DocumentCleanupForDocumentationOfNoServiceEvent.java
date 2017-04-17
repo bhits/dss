@@ -10,6 +10,8 @@ import gov.samhsa.c2s.common.log.LoggerFactory;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.RedactionHandlerException;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractPostRedactionLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
@@ -39,10 +41,8 @@ public class DocumentCleanupForDocumentationOfNoServiceEvent extends AbstractPos
     }
 
     @Override
-    public void execute(Document xmlDocument, XacmlResult xacmlResult,
-                        FactModel factModel, Document factModelDocument,
-                        RuleExecutionContainer ruleExecutionContainer,
-                        RedactionHandlerResult preRedactionResults) {
+    public void execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
+                        RuleExecutionContainer ruleExecutionContainer, RedactionHandlerResult preRedactionResults, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
         try {
             Stream<Node> documentationOfElements = documentAccessor.getNodeListAsStream(
                     xmlDocument, XPATH_DOCUMENTATIONOF_WITH_NO_SERVICE_EVENT);

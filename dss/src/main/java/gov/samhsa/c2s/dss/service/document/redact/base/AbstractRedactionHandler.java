@@ -7,12 +7,15 @@ import gov.samhsa.c2s.common.log.Logger;
 import gov.samhsa.c2s.common.log.LoggerFactory;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.RedactionHandlerException;
+
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import javax.xml.xpath.XPathExpressionException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -106,35 +109,33 @@ public abstract class AbstractRedactionHandler {
     }
 
     /**
-     * Contains any.
+     * Contains all.
      *
-     * @param obligations the obligations
-     * @param categories  the categories
-     * @return the string
+     * @param categoriesToRedact the list of categories to be redacted based on patient consent
+     *                           (Note: This set of categories is the complement set of the categories from the patient's actual consent)
+     * @param factCategories     the set of categories associated with the particular clinical fact
+     * @return a set of categories associated with the particular clinical fact which are triggering redaction of the fact
      */
-    private String containsAny(List<String> obligations, Set<String> categories) {
-        if (obligations != null && categories != null) {
-            for (String category : categories) {
-                if (obligations.contains(category)) {
-                    return category;
-                }
+    private Set<String> containsAll(List<String> categoriesToRedact, Set<String> factCategories) {
+        Set<String> factCategoriesTriggeringRedaction = new HashSet<>();
+
+        if ((categoriesToRedact != null) && (factCategories != null)) {
+            if (categoriesToRedact.containsAll(factCategories)) {
+                factCategoriesTriggeringRedaction = new HashSet<>(factCategories);
             }
         }
-        return null;
+
+        return factCategoriesTriggeringRedaction;
     }
 
     /**
-     * Find matching category.
+     * Find matching categories.
      *
-     * @param xacmlResult the xacml result
-     * @param fact        the fact
-     * @return the string
+     * @param pdpObligationsComplementSet the pdpObligationsComplementSet
+     * @param fact                        the fact
+     * @return a set of categories associated with the particular clinical fact which are triggering redaction of the fact
      */
-    private String findMatchingCategory(XacmlResult xacmlResult, ClinicalFact fact) {
-        return containsAny(xacmlResult.getPdpObligations(), fact.getValueSetCategories());
-    }
-
-    protected final Optional<String> findMatchingCategoryAsOptional(XacmlResult xacmlResult, ClinicalFact fact) {
-        return Optional.ofNullable(findMatchingCategory(xacmlResult, fact));
+    protected Set<String> findMatchingCategories(PdpObligationsComplementSetDto pdpObligationsComplementSet, ClinicalFact fact) {
+        return containsAll(pdpObligationsComplementSet.getAsListPdpObligationsComplementSet(), fact.getValueSetCategories());
     }
 }

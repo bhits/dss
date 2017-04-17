@@ -7,11 +7,15 @@ import gov.samhsa.c2s.brms.domain.XacmlResult;
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessor;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractClinicalFactLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+
+import java.util.Set;
 
 @Service
 public class HumanReadableTableRowById extends AbstractClinicalFactLevelRedactionHandler {
@@ -33,20 +37,18 @@ public class HumanReadableTableRowById extends AbstractClinicalFactLevelRedactio
     }
 
     @Override
-    public RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult,
-                                          FactModel factModel, Document factModelDocument, ClinicalFact fact,
-                                          RuleExecutionContainer ruleExecutionContainer) {
-        return findMatchingCategoryAsOptional(xacmlResult, fact)
+    public RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
+                                          ClinicalFact fact, RuleExecutionContainer ruleExecutionContainer, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
+        Set<String> categoriesTriggeringRedaction = findMatchingCategories(pdpObligationsComplementSetDto, fact);
+
+        return getEntryReferenceIdNodeListAsStream(factModelDocument, fact)
+                .map(Node::getNodeValue)
                 .filter(StringUtils::hasText)
-                .flatMap(foundCategory ->
-                        getEntryReferenceIdNodeListAsStream(factModelDocument, fact)
-                                .map(Node::getNodeValue)
-                                .filter(StringUtils::hasText)
-                                .map(reference -> addNodesToListForSensitiveCategory(
-                                        foundCategory, xmlDocument,
-                                        XPATH_HUMAN_READABLE_TABLE_ROW_BY_REFERENCE,
-                                        fact.getEntry(), reference))
-                                .reduce(RedactionHandlerResult::concat))
+                .map(reference -> addNodesToListForSensitiveCategory(
+                        categoriesTriggeringRedaction, xmlDocument,
+                        XPATH_HUMAN_READABLE_TABLE_ROW_BY_REFERENCE,
+                        fact.getEntry(), reference))
+                .reduce(RedactionHandlerResult::concat)
                 .orElseGet(RedactionHandlerResult::new);
     }
 }

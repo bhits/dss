@@ -7,12 +7,15 @@ import gov.samhsa.c2s.brms.domain.XacmlResult;
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessor;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractClinicalFactLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.w3c.dom.Document;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class HumanReadableTextNodeByDisplayName extends AbstractClinicalFactLevelRedactionHandler {
@@ -34,18 +37,15 @@ public class HumanReadableTextNodeByDisplayName extends AbstractClinicalFactLeve
     }
 
     @Override
-    public RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult,
-                                          FactModel factModel, Document factModelDocument, ClinicalFact fact,
-                                          RuleExecutionContainer ruleExecutionContainer) {
+    public RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
+                                          ClinicalFact fact, RuleExecutionContainer ruleExecutionContainer, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
+        Set<String> categoriesTriggeringRedaction = findMatchingCategories(pdpObligationsComplementSetDto, fact);
+
         return Optional.ofNullable(fact.getDisplayName())
                 .filter(StringUtils::hasText)
                 .map(String::toLowerCase)
-                .flatMap(displayName -> findMatchingCategoryAsOptional(xacmlResult, fact)
-                        .map(foundCategory -> addNodesToListForSensitiveCategory(
-                                foundCategory, xmlDocument,
-                                XPATH_HUMAN_READABLE_TEXT_NODE,
-                                fact.getEntry(), displayName))
-                )
-                .orElseGet(RedactionHandlerResult::new);
+                .flatMap(displayName -> Optional.ofNullable(
+                        addNodesToListForSensitiveCategory(categoriesTriggeringRedaction, xmlDocument, XPATH_HUMAN_READABLE_TEXT_NODE, fact.getEntry(), displayName))
+                ).orElseGet(RedactionHandlerResult::new);
     }
 }

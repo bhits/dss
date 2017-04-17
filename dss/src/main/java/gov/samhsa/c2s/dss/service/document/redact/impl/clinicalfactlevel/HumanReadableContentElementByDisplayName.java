@@ -7,12 +7,15 @@ import gov.samhsa.c2s.brms.domain.XacmlResult;
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessor;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractClinicalFactLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.w3c.dom.Document;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class HumanReadableContentElementByDisplayName extends AbstractClinicalFactLevelRedactionHandler {
@@ -39,36 +42,27 @@ public class HumanReadableContentElementByDisplayName extends AbstractClinicalFa
     }
 
     @Override
-    public RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult,
-                                          FactModel factModel, Document factModelDocument, ClinicalFact fact,
-                                          RuleExecutionContainer ruleExecutionContainer) {
+    public RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
+                                          ClinicalFact fact, RuleExecutionContainer ruleExecutionContainer, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
         return Optional.ofNullable(fact.getDisplayName())
                 .filter(StringUtils::hasText)
                 .map(String::toLowerCase)
-                .map(code -> collectingContentRedactionResults(xmlDocument, xacmlResult, fact, code))
+                .map(code -> collectingContentRedactionResults(xmlDocument, xacmlResult, fact, code, pdpObligationsComplementSetDto))
                 .orElseGet(RedactionHandlerResult::new);
     }
 
-    private RedactionHandlerResult collectingContentRedactionResults(Document xmlDocument, XacmlResult xacmlResult, ClinicalFact fact, String displayName) {
+    private RedactionHandlerResult collectingContentRedactionResults(Document xmlDocument, XacmlResult xacmlResult, ClinicalFact fact, String displayName, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
         // Find matching category
-        final Optional<String> foundCategoryAsOptional = findMatchingCategoryAsOptional(xacmlResult, fact);
+        final Set<String> categoriesTriggeringRedaction = findMatchingCategories(pdpObligationsComplementSetDto, fact);
 
         // Collect the content element
-        final RedactionHandlerResult contentElementResult = foundCategoryAsOptional
-                .map(foundCategory -> addNodesToListForSensitiveCategory(
-                        foundCategory, xmlDocument,
-                        XPATH_HUMAN_READABLE_CONTENT_ELEMENT_BY_DISPLAY_NAME,
-                        fact.getEntry(), displayName))
-                .orElseGet(RedactionHandlerResult::new);
+        final RedactionHandlerResult contentElementResult = addNodesToListForSensitiveCategory(
+                categoriesTriggeringRedaction, xmlDocument, XPATH_HUMAN_READABLE_CONTENT_ELEMENT_BY_DISPLAY_NAME, fact.getEntry(), displayName);
 
         // Collect the text that follows the content element
         // (if exists)s
-        final RedactionHandlerResult nextTextNodeOfContentElementResult = foundCategoryAsOptional
-                .map(foundCategory -> addNodesToListForSensitiveCategory(
-                        foundCategory, xmlDocument,
-                        XPATH_HUMAN_READABLE_CONTENT_ELEMENT_NEXT_TEXT_NODE,
-                        fact.getEntry(), displayName))
-                .orElseGet(RedactionHandlerResult::new);
+        final RedactionHandlerResult nextTextNodeOfContentElementResult = addNodesToListForSensitiveCategory(
+                categoriesTriggeringRedaction, xmlDocument, XPATH_HUMAN_READABLE_CONTENT_ELEMENT_NEXT_TEXT_NODE, fact.getEntry(), displayName);
 
         return contentElementResult.concat(nextTextNodeOfContentElementResult);
     }

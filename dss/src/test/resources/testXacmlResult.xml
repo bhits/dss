@@ -49,12 +49,10 @@
 	<pdpObligation>PSY</pdpObligation>
 	<!-- Substance abuse information -->
 	<pdpObligation>ETH</pdpObligation>
-	<!-- Genetic disease information -->
-	<pdpObligation>GDIS</pdpObligation>
-	<!-- Sexual assault, abuse, or domestic violence information -->
-	<pdpObligation>SDV</pdpObligation>
+	<!-- Alcohol use and Alcoholism Information -->
+	<pdpObligation>ALC</pdpObligation>
 	<!-- Sexuality and reproductive health information -->
 	<pdpObligation>SEX</pdpObligation>
-	<!-- Sexually transmitted disease information -->
-	<pdpObligation>STD</pdpObligation>
+	<!-- Communicable disease information -->
+	<pdpObligation>COM</pdpObligation>
 </xacmlResult>

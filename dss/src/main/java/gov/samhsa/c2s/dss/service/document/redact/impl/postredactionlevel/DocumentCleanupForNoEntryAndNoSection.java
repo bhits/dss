@@ -8,6 +8,8 @@ import gov.samhsa.c2s.common.document.accessor.DocumentAccessorException;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.RedactionHandlerException;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractPostRedactionLevelRedactionHandler;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
@@ -63,10 +65,8 @@ public class DocumentCleanupForNoEntryAndNoSection extends AbstractPostRedaction
     }
 
     @Override
-    public void execute(Document xmlDocument, XacmlResult xacmlResult,
-                        FactModel factModel, Document factModelDocument,
-                        RuleExecutionContainer ruleExecutionContainer,
-                        RedactionHandlerResult preRedactionResults) {
+    public void execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
+                        RuleExecutionContainer ruleExecutionContainer, RedactionHandlerResult preRedactionResults, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
         try {
             // Clean up section components with no entries
             cleanUpSectionComponentsWithNoEntries(xmlDocument);

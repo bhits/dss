@@ -12,9 +12,13 @@ import gov.samhsa.c2s.common.filereader.FileReaderImpl;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerException;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerImpl;
+import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
+import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetServiceImplMock;
+import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryResponseDto;
 import gov.samhsa.c2s.dss.service.document.EmbeddedClinicalDocumentExtractor;
 import gov.samhsa.c2s.dss.service.document.EmbeddedClinicalDocumentExtractorImpl;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,6 +30,7 @@ import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,6 +47,8 @@ public class HumanReadableContentElementByIdTest {
     private DocumentXmlConverter documentXmlConverter;
     private EmbeddedClinicalDocumentExtractor embeddedClinicalDocumentExtractor;
 
+    private static ValueSetService valueSetService;
+
     private HumanReadableContentElementById sut;
 
     @Before
@@ -51,6 +58,7 @@ public class HumanReadableContentElementByIdTest {
         documentAccessor = new DocumentAccessorImpl();
         documentXmlConverter = new DocumentXmlConverterImpl();
         embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl(documentXmlConverter, documentAccessor);
+        valueSetService = new ValueSetServiceImplMock(fileReader);
         sut = new HumanReadableContentElementById(documentAccessor);
     }
 
@@ -68,12 +76,25 @@ public class HumanReadableContentElementByIdTest {
         ClinicalFact fact = factModel.getClinicalFactList().get(8);
         Set<String> valueSetCategories = new HashSet<>();
         valueSetCategories.add("HIV");
-        valueSetCategories.add("ETH");
         fact.setValueSetCategories(valueSetCategories);
+
+        Set<ValueSetCategoryResponseDto> allValueSetCategoryDtosSet = new HashSet<>(valueSetService.getAllValueSetCategories());
+        Set<String> xacmlPdpObligations = new HashSet<>(factModel.getXacmlResult().getPdpObligations());
+
+        Set<String> allValueSetCategoriesSet = new HashSet<>();
+        allValueSetCategoriesSet.addAll(allValueSetCategoryDtosSet
+                .stream()
+                .map(ValueSetCategoryResponseDto::getCode)
+                .collect(Collectors.toList()));
+
+        // Calculate the set difference (i.e. complement set)
+        allValueSetCategoriesSet.removeAll(xacmlPdpObligations);
+
+        PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(allValueSetCategoriesSet);
 
         // Act
         final RedactionHandlerResult response = sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, fact, ruleExecutionContainer);
+                factModelDocument, fact, ruleExecutionContainer, pdpObligationsComplementSetDto);
 
         // Assert
         assertEquals(2, response.getRedactNodeList().size());

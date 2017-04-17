@@ -8,11 +8,13 @@ import gov.samhsa.c2s.common.document.accessor.DocumentAccessor;
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessorException;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.RedactionHandlerException;
-import org.springframework.util.StringUtils;
+import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 public abstract class AbstractClinicalFactLevelRedactionHandler extends AbstractRedactionHandler {
@@ -34,17 +36,18 @@ public abstract class AbstractClinicalFactLevelRedactionHandler extends Abstract
     /**
      * Execute.
      *
-     * @param xmlDocument            the xml document
-     * @param xacmlResult            the xacml result
-     * @param factModel              the fact model
-     * @param factModelDocument      the fact model document
-     * @param fact                   the fact
-     * @param ruleExecutionContainer the rule execution container
+     * @param xmlDocument                 the xml document
+     * @param xacmlResult                 the xacml result
+     * @param factModel                   the fact model
+     * @param factModelDocument           the fact model document
+     * @param fact                        the fact
+     * @param ruleExecutionContainer      the rule execution container
+     * @param pdpObligationsComplementSet the pdpObligationsComplementSet
      * @return RedactionHandlerResult
      */
-    public abstract RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult,
-                                                   FactModel factModel, Document factModelDocument, ClinicalFact fact,
-                                                   RuleExecutionContainer ruleExecutionContainer);
+    public abstract RedactionHandlerResult execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
+                                                   ClinicalFact fact, RuleExecutionContainer ruleExecutionContainer,
+                                                   PdpObligationsComplementSetDto pdpObligationsComplementSet);
 
     /**
      * Gets the entry reference id node list.
@@ -75,14 +78,15 @@ public abstract class AbstractClinicalFactLevelRedactionHandler extends Abstract
         }
     }
 
-    protected RedactionHandlerResult addNodesToListForSensitiveCategory(String foundCategory,
-                                                                        Document xmlDocument,
-                                                                        String xPathExpr,
-                                                                        String... values) {
-        final RedactionHandlerResult redactionHandlerResult = addNodesToList(xmlDocument, xPathExpr, values);
-        if (StringUtils.hasText(foundCategory)) {
-            redactionHandlerResult.getRedactCategorySet().add(foundCategory);
+    protected RedactionHandlerResult addNodesToListForSensitiveCategory(Set<String> categoriesTriggeringRedaction,
+                                                                        Document xmlDocument, String xPathExpr, String... values) {
+        RedactionHandlerResult redactionHandlerResult = new RedactionHandlerResult();
+
+        if (categoriesTriggeringRedaction.size() > 0) {
+            redactionHandlerResult = addNodesToList(xmlDocument, xPathExpr, values);
+            redactionHandlerResult.getRedactCategorySet().addAll(categoriesTriggeringRedaction);
         }
+
         return redactionHandlerResult;
     }
 }

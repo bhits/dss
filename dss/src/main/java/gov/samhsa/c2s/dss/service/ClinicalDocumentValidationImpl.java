@@ -41,11 +41,26 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 
-import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.*;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.CATEGORY_OBLIGATIONS_APPLIED;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.ORIGINAL_DOCUMENT;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.ORIGINAL_DOCUMENT_VALID;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.RULES_FIRED;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.SECTION_OBLIGATIONS_APPLIED;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.SEGMENTED_DOCUMENT;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.SEGMENTED_DOCUMENT_VALID;
 
 @Service
 public class ClinicalDocumentValidationImpl implements ClinicalDocumentValidation {
 
+    /**
+     * The Constant C32_CDA_XSD_PATH.
+     */
+    public static final String C32_CDA_XSD_PATH = "schema/cdar2c32/infrastructure/cda/";
+
+    /**
+     * The Constant C32_CDA_XSD_NAME.
+     */
+    public static final String C32_CDA_XSD_NAME = "C32_CDA.xsd";
     private static final Charset DEFAULT_ENCODING = StandardCharsets.UTF_8;
     private final Logger logger = LoggerFactory
             .getLogger(this.getClass());
@@ -268,15 +283,13 @@ public class ClinicalDocumentValidationImpl implements ClinicalDocumentValidatio
         } else {
             throw new AuditClientException("Audit Client bean not create.");
         }
-
-
     }
 
     @PostConstruct
     public void afterPropertiesSet() throws Exception {
         this.xmlValidator = new XmlValidation(this.getClass().getClassLoader()
-                .getResourceAsStream(DocumentSegmentationImpl.C32_CDA_XSD_PATH + DocumentSegmentationImpl.C32_CDA_XSD_NAME),
-                DocumentSegmentationImpl.C32_CDA_XSD_PATH);
+                .getResourceAsStream(C32_CDA_XSD_PATH + C32_CDA_XSD_NAME),
+                C32_CDA_XSD_PATH);
     }
 
     private Charset getCharset(Optional<String> documentEncoding) {

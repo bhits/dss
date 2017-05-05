@@ -225,8 +225,9 @@ public class DocumentRedactorImplTest {
                 documentAccessor);
         documentAccessorMock = mock(DocumentAccessorImpl.class);
         valueSetService = new ValueSetServiceImplMock(fileReader);
-        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl(
-                documentXmlConverter, documentAccessor);
+        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl();
+        ReflectionTestUtils.setField(embeddedClinicalDocumentExtractor, "documentXmlConverter", documentXmlConverter);
+        ReflectionTestUtils.setField(embeddedClinicalDocumentExtractor, "documentAccessor", documentAccessor);
 
         ruleExecutionContainer = setRuleExecutionContainer();
         ruleExecutionContainerWithHivEth = marshaller.unmarshalFromXml(

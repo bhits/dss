@@ -10,12 +10,15 @@ import gov.samhsa.c2s.common.log.Logger;
 import gov.samhsa.c2s.common.log.LoggerFactory;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerException;
-import gov.samhsa.c2s.common.validation.XmlValidation;
 import gov.samhsa.c2s.common.validation.exception.XmlDocumentReadFailureException;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ConceptCodeAndCodeSystemOidDto;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryMapResponseDto;
-import gov.samhsa.c2s.dss.service.document.*;
+import gov.samhsa.c2s.dss.service.document.DocumentEditor;
+import gov.samhsa.c2s.dss.service.document.DocumentFactModelExtractor;
+import gov.samhsa.c2s.dss.service.document.DocumentRedactor;
+import gov.samhsa.c2s.dss.service.document.DocumentTagger;
+import gov.samhsa.c2s.dss.service.document.EmbeddedClinicalDocumentExtractor;
 import gov.samhsa.c2s.dss.service.document.dto.RedactedDocument;
 import gov.samhsa.c2s.dss.service.document.template.CCDAVersion;
 import gov.samhsa.c2s.dss.service.document.template.DocumentType;
@@ -44,15 +47,6 @@ import java.util.stream.Collectors;
 @Service
 public class DocumentSegmentationImpl implements DocumentSegmentation {
 
-    /**
-     * The Constant C32_CDA_XSD_PATH.
-     */
-    public static final String C32_CDA_XSD_PATH = "schema/cdar2c32/infrastructure/cda/";
-
-    /**
-     * The Constant C32_CDA_XSD_NAME.
-     */
-    public static final String C32_CDA_XSD_NAME = "C32_CDA.xsd";
     public static final Charset DEFAULT_ENCODING = StandardCharsets.UTF_8;
 
     private final Logger logger = LoggerFactory
@@ -112,11 +106,6 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
     @Autowired
     private AdditionalMetadataGeneratorForSegmentedClinicalDocument additionalMetadataGeneratorForSegmentedClinicalDocument;
 
-    /**
-     * The xml validator.
-     */
-    private XmlValidation xmlValidator;
-
     @Autowired
     private ClinicalDocumentValidation clinicalDocumentValidation;
 
@@ -157,7 +146,6 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
         this.embeddedClinicalDocumentExtractor = embeddedClinicalDocumentExtractor;
         this.valueSetService = valueSetService;
         this.additionalMetadataGeneratorForSegmentedClinicalDocument = additionalMetadataGeneratorForSegmentedClinicalDocument;
-        this.xmlValidator = createXmlValidator();
     }
 
     @SuppressWarnings("unchecked")
@@ -319,12 +307,6 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
                                 .getExecutionResponseContainerXml(), null, null);
         segmentDocumentResponse.setDocumentPayloadRawData(new DataHandler(
                 rawData));
-    }
-
-    private XmlValidation createXmlValidator() {
-        return new XmlValidation(this.getClass().getClassLoader()
-                .getResourceAsStream(C32_CDA_XSD_PATH + C32_CDA_XSD_NAME),
-                C32_CDA_XSD_PATH);
     }
 
     private Charset getCharset(Optional<String> documentEncoding) {

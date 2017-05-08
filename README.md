@@ -1,6 +1,6 @@
-# Document Segmentation Service API
+# Document Segmentation Service
 
-The Document Segmentation Service (DSS) API is responsible for the segmentation of the patient's sensitive health information using the privacy settings selected in the patient's consent. The segmentation process involves the following phases:
+The Document Segmentation Service (DSS) is responsible for the segmentation of the patient's sensitive health information using the privacy settings selected in the patient's consent. The segmentation process involves the following phases:
 
 1. Document Validation: The DSS uses the [Document-Validator](https://github.com/bhits/document-validator) to verify that the original document is a valid CCD document.
 2. Fact Model Extraction: The DSS extracts a fact model, which is essentially based on the coded concepts in a CCD document.
@@ -36,14 +36,14 @@ To build the project, navigate to the folder that contains `pom.xml` file using 
 
 ## Run
 ### Prerequisite
-In order to run DSS successfully, Logback-Audit and Guvnor Servers are need to be stood up first. Please refer the deployment instruction links below
+In order to run DSS successfully, Logback-Audit and Guvnor servers need to be stood up first. Please refer to the deployment instruction links below:
 
 + [Logback-Audit deployment instruction](https://github.com/bhits/logback-audit)
 + [JBoss Drools Guvnor deployment instruction](https://github.com/bhits/dockerized-drools-guvnor)
 
-After the two servers are up, the hostname (currently is localhost) in the [default configuration](https://github.com/bhits/dss-api/blob/master/dss/src/main/resources/application.yml) need to be replaced with the real server name where those two Apps are running
+After the two servers are up, the hostname (currently `localhost`) in the [default configuration](dss/src/main/resources/application.yml) needs to be replaced with the real server name(s) to point to where Logback-Audit and Guvnor are running.
 
-Logback-Audit configuration section
+Logback-Audit configuration section:
 
 ```yml
 ...
@@ -53,7 +53,7 @@ Logback-Audit configuration section
 ...
 ```
 
-Guvnor configuration section
+Guvnor configuration section:
 ```yml
 ...
 c2s:
@@ -76,9 +76,9 @@ This is a [Spring Boot](https://projects.spring.io/spring-boot/) project and ser
 
 ## Configure
 
-This API utilizes [`Configuration Server`](https://github.com/bhits/config-server) which is based on [Spring Cloud Config](https://github.com/spring-cloud/spring-cloud-config) to manage externalized configuration, which is stored in a `Configuration Data Git Repository`. We provide a [`Default Configuration Data Git Repository`]( https://github.com/bhits/c2s-config-data).
+This service utilizes a [`Configuration Server`](https://github.com/bhits/config-server) (which is based on [Spring Cloud Config](https://github.com/spring-cloud/spring-cloud-config)) to manage externalized configuration, which is stored in a `Configuration Data Git Repository`. We provide a [`Default Configuration Data Git Repository`]( https://github.com/bhits/c2s-config-data).
 
-This API can run with the default configuration, which is targeted for a local development environment. Default configuration data is from three places: `bootstrap.yml`, `application.yml`, and the data which `Configuration Server` reads from `Configuration Data Git Repository`. Both `bootstrap.yml` and `application.yml` files are located in the `resources` folder of this source code.
+This service can run with the default configuration, which is targeted for a local development environment. Default configuration data is from three places: `bootstrap.yml`, `application.yml`, and the data which `Configuration Server` reads from `Configuration Data Git Repository`. Both `bootstrap.yml` and `application.yml` files are located in the `resources` folder of this source code.
   		  
 We **recommend** overriding the configuration as needed in the `Configuration Data Git Repository`, which is used by the `Configuration Server`.
   		  
@@ -138,14 +138,9 @@ Java has a default CA Certificates Store that allows it to trust well-known cert
 
 *NOTE: The `cacerts` references given regarding volume mapping above are files, not directories.*
 
-[//]: # (## API Documentation)
-
-[//]: # (## Notes)
-
-[//]: # (## Contribute)
-
 ## License
-View [license](https://github.com/bhits/dss-api/blob/master/LICENSE) information for the software contained in this repository.
+
+View [license](LICENSE) information for the software contained in this repository.
 
 ## Contact
 
@@ -153,6 +148,4 @@ If you have any questions, comments, or concerns please see [Consent2Share](http
 
 ## Report Issues
 
-Please use [GitHub Issues](https://github.com/bhits/dss-api/issues) page to report issues.
-
-[//]: # (License)
+Please use [GitHub Issues](https://github.com/bhits/dss/issues) page to report issues.

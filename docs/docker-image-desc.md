@@ -13,27 +13,21 @@ For more information about this image, the source code, and its history, please 
 
 # What is Document Segmentation Service API?
 
-The Document Segmentation Service (DSS) API is responsible for the segmentation of the patient's sensitive health information using the patient consent. Segmentation invloves the following phase:
+The Document Segmentation Service (DSS) API is responsible for the segmentation of the patient's sensitive health information using the privacy settings selected in the patient's consent. The segmentation process involves the following phases:
 
-Document Validation: DSS uses [Document-Validator](https://github.com/bhits/document-validator) to verify that the document is a valid CCD document.
-
-Fact Model Extraction: DSS extracts the fact model using the consent policy.
-
-Value Set Lookup: For every code and code system in the fact model, it uses Value Set Service to lookup the value set categories which is store in the fact model.
-
-BRMS (Business Rules Management Service) Execution: DSS uses the rule execution service to execute the clinical fact.
-
-Redaction: DSS uses the patient consent and the concept code to redact the document.
-
-Tagging: DSS tag the docment based on the business rules specified in [Guvnor](http://guvnor.jboss.org/).
-
-Clean Up: DSS remove custom element that were added to the document for tracing.
-
-Segmented Document Validation: DSS validate the segmented document before returning it.
+1. Document Validation: The DSS uses the [Document-Validator](https://github.com/bhits/document-validator) to verify that the original document is a valid CCD document.
+2. Fact Model Extraction: The DSS extracts a fact model, which is essentially based on the coded concepts in a CCD document.
+3. Value Set Lookup: For every code and code system in the fact model, the DSS uses the Value Set Service (VSS) API to lookup the value set categories. The value set categories are also stored in the fact model for future use in the *Redaction* and *Tagging* phases.
+4. BRMS (Business Rules Management Service) Execution: The DSS retrieves the business rules that are stored in a *[JBoss Guvnor](http://guvnor.jboss.org/)* instance and executes them with the fact model. The business rule execution response might contain directives regarding the *Tagging* phase.
+5. Redaction: The DSS redacts sensitive health information for any sensitive value set categories which the patient did not consent to share in his/her consent. *NOTE: Additional Redaction Handlers are also being configured for other clean-up purposes.*
+6. Tagging: The DSS tags the document based on the business rule execution response from the *BRMS Execution* step.
+7. Clean Up: The DSS removes the custom elements that were added to the document for tracing purposes.
+8. Segmented Document Validation: The DSS validates the final segmented document before returning it to ensure the output of DSS is still a valid CCD document.
+9. Auditing: If enabled, the DSS also audits the segmentation process using *Logback Audit* server.
 
 For more information and related downloads for Consent2Share, please visit [Consent2Share](https://bhits.github.io/consent2share/).
-# How to use this image
 
+# How to use this image
 
 ## Start a DSS instance
 

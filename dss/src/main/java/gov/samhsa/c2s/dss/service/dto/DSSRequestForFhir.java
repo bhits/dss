@@ -10,7 +10,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Optional;
 
 @Data
-public class DSSRequestForFHIR {
+public class DSSRequestForFhir {
 
     @NotNull
     protected XacmlResult xacmlResult;
@@ -18,7 +18,7 @@ public class DSSRequestForFHIR {
     protected Optional<Boolean> auditFailureByPass = Optional.empty();
     protected Optional<Boolean> enableTryPolicyResponse = Optional.empty();
     @NotNull
-    @JsonDeserialize(using = STU3FHIRBundleDeserializer.class)
-    @JsonSerialize(using = STU3FHIRBundleSerializer.class)
-    private Bundle stu3FHIRBundle;
+    @JsonDeserialize(using = FhirStu3BundleDeserializer.class)
+    @JsonSerialize(using = FhirStu3BundleSerializer.class)
+    private Bundle fhirStu3Bundle;
 }

@@ -53,7 +53,7 @@ public class ApplicationContextConfig {
     }
 
     @Bean
-    public DocumentAccessor documentAccessor(FHIRIncludedNamespaceContext fhirIncludedNamespaceContext) {
+    public DocumentAccessor documentAccessor(FhirIncludedNamespaceContext fhirIncludedNamespaceContext) {
         final DocumentAccessorImpl documentAccessor = new DocumentAccessorImpl();
         documentAccessor.setNamespaceContext(fhirIncludedNamespaceContext);
         return documentAccessor;
@@ -82,7 +82,7 @@ public class ApplicationContextConfig {
     }
 
     @Component
-    static class FHIRIncludedNamespaceContext extends DefaultNamespaceContext {
+    static class FhirIncludedNamespaceContext extends DefaultNamespaceContext {
         @Override
         public String getNamespaceURI(String prefix) {
             return prefix.equals("fhir") ? "http://hl7.org/fhir" : super.getNamespaceURI(prefix);

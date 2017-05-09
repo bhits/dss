@@ -32,7 +32,7 @@ public class SecurityConfig {
                 http.authorizeRequests()
                         // TODO: May add permission for accessing following resource
                         .antMatchers(HttpMethod.POST, "/segmentedDocument/**").permitAll()
-                        .antMatchers(HttpMethod.POST, "/segmentedFHIRBundle/**").permitAll()
+                        .antMatchers(HttpMethod.POST, "/segmentedFhirBundle/**").permitAll()
                         .antMatchers(HttpMethod.POST, "/validateDocument/**").permitAll()
                         // Security scope for accessing management endpoint
                         .antMatchers(HttpMethod.GET, "/management/**").access(hasScope("dss.management"))

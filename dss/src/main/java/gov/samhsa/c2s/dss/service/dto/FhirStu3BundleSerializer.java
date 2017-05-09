@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-public class STU3FHIRBundleSerializer extends JsonSerializer<Bundle> {
+public class FhirStu3BundleSerializer extends JsonSerializer<Bundle> {
     @Autowired
     private ca.uhn.fhir.parser.JsonParser fhirJsonParser;
 

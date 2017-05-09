@@ -12,9 +12,9 @@ import javax.validation.constraints.NotNull;
 @Data
 @AllArgsConstructor(staticName = "of")
 @NoArgsConstructor
-public class DSSResponseForFHIR {
+public class DSSResponseForFhir {
     @NotNull
-    @JsonDeserialize(using = STU3FHIRBundleDeserializer.class)
-    @JsonSerialize(using = STU3FHIRBundleSerializer.class)
-    private Bundle stu3FHIRBundle;
+    @JsonDeserialize(using = FhirStu3BundleDeserializer.class)
+    @JsonSerialize(using = FhirStu3BundleSerializer.class)
+    private Bundle fhirStu3Bundle;
 }

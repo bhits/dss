@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class FHIRBundleRedactorImpl implements FHIRBundleRedactor {
+public class FhirBundleRedactorImpl implements FhirBundleRedactor {
 
     private static final String XPATH_EMBEDDED_FHIR_BUNDLE = "//fhir:EmbeddedFHIRBundle";
     private static final String XPATH_GENERATED_ENTRY_ID = "//fhir:generatedEntryId";
@@ -18,7 +18,7 @@ public class FHIRBundleRedactorImpl implements FHIRBundleRedactor {
     private DocumentXmlConverter documentXmlConverter;
 
     @Override
-    public String cleanUpEmbeddedFHIRBundleFromFactModel(String factModelXml) {
+    public String cleanUpEmbeddedFhirBundleFromFactModel(String factModelXml) {
         return cleanUpElements(factModelXml, XPATH_EMBEDDED_FHIR_BUNDLE);
     }
 

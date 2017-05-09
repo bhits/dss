@@ -3,7 +3,7 @@ package gov.samhsa.c2s.dss.service.fhir;
 import gov.samhsa.c2s.dss.service.EmbeddedElementExtractor;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
 
-public interface EmbeddedFHIRBundleExtractor extends EmbeddedElementExtractor {
+public interface EmbeddedFhirBundleExtractor extends EmbeddedElementExtractor {
     /**
      * Extract FHIR Bundle from fact model.
      *
@@ -11,5 +11,5 @@ public interface EmbeddedFHIRBundleExtractor extends EmbeddedElementExtractor {
      * @return the string
      * @throws DocumentSegmentationException the document segmentation exception
      */
-    String extractFHIRBundleFromFactModel(String factModel) throws DocumentSegmentationException;
+    String extractFhirBundleFromFactModel(String factModel) throws DocumentSegmentationException;
 }

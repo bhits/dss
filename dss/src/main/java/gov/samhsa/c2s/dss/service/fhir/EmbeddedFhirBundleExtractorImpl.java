@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class EmbeddedFHIRBundleExtractorImpl implements EmbeddedFHIRBundleExtractor {
+public class EmbeddedFhirBundleExtractorImpl implements EmbeddedFhirBundleExtractor {
 
     private static final String XPATH_FHIR_BUNDLE = "//fhir:Bundle";
 
@@ -18,7 +18,7 @@ public class EmbeddedFHIRBundleExtractorImpl implements EmbeddedFHIRBundleExtrac
     private DocumentAccessor documentAccessor;
 
     @Override
-    public String extractFHIRBundleFromFactModel(String factModel) throws DocumentSegmentationException {
+    public String extractFhirBundleFromFactModel(String factModel) throws DocumentSegmentationException {
         return extractEmbeddedElement(factModel, XPATH_FHIR_BUNDLE);
     }
 

@@ -1,7 +1,7 @@
 package gov.samhsa.c2s.dss.infrastructure.dto;
 
 import lombok.Data;
-
+//TODO: Remove
 @Data
 public class DocumentValidationResult {
 

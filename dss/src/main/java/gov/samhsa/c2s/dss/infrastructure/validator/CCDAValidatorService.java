@@ -4,7 +4,7 @@ import gov.samhsa.c2s.dss.infrastructure.dto.ValidationRequestDto;
 import gov.samhsa.c2s.dss.infrastructure.dto.ValidationResponseDto;
 
 import java.nio.charset.Charset;
-
+//TODO: Remove
 public interface CCDAValidatorService {
     ValidationResponseDto validate(ValidationRequestDto request);
 

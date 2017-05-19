@@ -6,7 +6,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.RestOperations;
 
 import java.nio.charset.Charset;
-
+//TODO: Remove
 public class CCDAValidatorServiceImpl implements CCDAValidatorService {
     private final String endpoint;
     private final RestOperations restTemplate;

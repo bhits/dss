@@ -4,7 +4,6 @@ import lombok.Data;
 
 import javax.validation.constraints.NotNull;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 @Data
 public class ValidationRequestDto {

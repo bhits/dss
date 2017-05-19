@@ -17,6 +17,8 @@ public class DSSRequestForFhir {
     protected Optional<Boolean> audited = Optional.empty();
     protected Optional<Boolean> auditFailureByPass = Optional.empty();
     protected Optional<Boolean> enableTryPolicyResponse = Optional.empty();
+    protected Optional<Boolean> enableRedact = Optional.empty();
+
     @NotNull
     @JsonDeserialize(using = FhirStu3BundleDeserializer.class)
     @JsonSerialize(using = FhirStu3BundleSerializer.class)

@@ -6,4 +6,6 @@ import gov.samhsa.c2s.dss.service.dto.DSSResponseForFhir;
 public interface FhirBundleSegmentation {
 
     DSSResponseForFhir segmentFhirBundle(DSSRequestForFhir dssRequestForFhir);
+
+    DSSResponseForFhir redactFhirBundle(DSSRequestForFhir dssRequestForFhir);
 }

@@ -1,6 +1,8 @@
 package gov.samhsa.c2s.dss.service;
 
 import ca.uhn.fhir.parser.XmlParser;
+import ca.uhn.fhir.validation.FhirValidator;
+import ca.uhn.fhir.validation.ValidationResult;
 import gov.samhsa.c2s.brms.domain.FactModel;
 import gov.samhsa.c2s.brms.domain.RuleExecutionContainer;
 import gov.samhsa.c2s.brms.domain.XacmlResult;
@@ -20,18 +22,19 @@ import gov.samhsa.c2s.dss.service.dto.DSSResponseForFhir;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
 import gov.samhsa.c2s.dss.service.fhir.EmbeddedFhirBundleExtractor;
 import gov.samhsa.c2s.dss.service.fhir.FhirBundleRedactor;
+import org.hl7.fhir.dstu3.model.Base;
 import org.hl7.fhir.dstu3.model.Bundle;
 import org.hl7.fhir.dstu3.model.InstantType;
+import org.hl7.fhir.dstu3.model.Resource;
+import org.hl7.fhir.exceptions.FHIRException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import javax.xml.transform.URIResolver;
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,6 +44,9 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     private static final String TAG_FOR_FHIR_BUNDLE_XSL = "tagForFHIRBundle.xsl";
 
     private static final String PARAM_XACML_RESULT = "xacmlResult";
+    private static final String FHIR_SEARCHSET_TYPE = "searchset";
+    private static final String FHIR_REFERENCE = "reference";
+    private static final String FHIR_SUBJECT = "subject";
 
     private final Logger logger = LoggerFactory.getLogger(this);
 
@@ -65,6 +71,9 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     @Autowired
     private FhirBundleRedactor fhirBundleRedactor;
 
+    @Autowired
+    private FhirValidator fhirValidator;
+
     @Override
     public DSSResponseForFhir segmentFhirBundle(DSSRequestForFhir dssRequestForFhir) {
         try {
@@ -76,9 +85,14 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
 
             final Bundle fhirBundle = dssRequestForFhir.getFhirStu3Bundle();
 
-//            // Validate the original Bundle
-//            final ValidationResult validationResult = fhirValidator.validateWithResult(fhirBundle);
-//            Assert.isTrue(validationResult.isSuccessful(), "FHIR validation is failed for the original bundle with " + validationResult.getMessages().size() + " messages");
+            // Assumption: Ensure bundle type is SearchSet
+            assertIsSearchSetBundle(fhirBundle);
+
+            //Assumption: Ensure bundle contains resources for one patient
+            assertIsSinglePatientPerBundle(fhirBundle);
+
+            // Assert is valid FHIR Bundle
+//            assertIsValidateBundle(fhirBundle);
 
             // Convert FHIR Bundle to XML
             final String originalFhirBundleXml = fhirXmlParser.encodeResourceToString(fhirBundle);
@@ -87,6 +101,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
             final String factModelXml = xmlTransformer.transform(
                     originalFhirBundleXml, new ClassPathResource(EXTRACT_CLINICAL_FACTS_FOR_FHIR_BUNDLE_XSL).getURI().toString(),
                     Optional.empty(), uriResolver);
+
             logger.debug(() -> "factModelXml: " + factModelXml);
 
             // Get clinical bundleWithGeneratedIds with generatedEntryId elements
@@ -104,6 +119,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
                     factModel.getClinicalFactList().stream()
                             .map(fact -> new ConceptCodeAndCodeSystemOidDto(fact.getCode(), fact.getCodeSystem()))
                             .collect(Collectors.toList());
+
             // Get value set categories
             final List<ValueSetCategoryMapResponseDto> valueSetCategories = valueSetService
                     .lookupValueSetCategories(conceptCodeAndCodeSystemOidDtoList);
@@ -122,6 +138,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
             String executionResponseContainer = brmsResponse
                     .getRuleExecutionResponseContainer();
             final String rulesFired = brmsResponse.getRulesFired();
+
             logger.debug(() -> "rulesFired: " + rulesFired);
 
             // unmarshall from originalFhirBundleXml to RuleExecutionContainer
@@ -129,14 +146,15 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
                     RuleExecutionContainer.class, executionResponseContainer);
 
             logger.debug(() -> "Fact model: " + factModelXml);
-            logger.debug(() -> "Rule Execution Container size: "
-                    + ruleExecutionContainer.getExecutionResponseList().size());
+            logger.debug(() -> "Rule Execution Container size: " + ruleExecutionContainer.getExecutionResponseList().size());
             logger.debug(() -> "ruleExecutionContainer: " + ruleExecutionContainer);
 
             // start tagging the bundle with sensitivity categories
             final String finalFactModelXml = marshal(factModel);
+
             logger.debug(() -> "finalFactModelXml: " + finalFactModelXml);
             final String ruleExecutionContainerXml = marshal(ruleExecutionContainer);
+
             logger.debug(() -> "ruleExecutionContainerXml: " + ruleExecutionContainerXml);
             final Optional<URIResolver> uriResolverForTagging = Optional
                     .of(new StringURIResolver()
@@ -146,24 +164,59 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
                                     "<ruleExecutionContainer>", "<ruleExecutionContainer xmlns=\"http://hl7.org/fhir\">")));
             final String taggedBundleXml = xmlTransformer.transform(bundleWithGeneratedIds,
                     new ClassPathResource(TAG_FOR_FHIR_BUNDLE_XSL).getURI().toString(), Optional.empty(), uriResolverForTagging);
+
             logger.debug(() -> "taggedBundleXml: " + taggedBundleXml);
 
             final String cleanedUpTaggedBundleXml = fhirBundleRedactor.cleanUpGeneratedEntryIds(taggedBundleXml);
+
             logger.debug(() -> "cleanedUpTaggedBundleXml: " + cleanedUpTaggedBundleXml);
 
             // Update `Bundle.meta.lastUpdated` and `Bundle.id`
             final Bundle taggedBundle = (Bundle) fhirXmlParser.parseResource(cleanedUpTaggedBundleXml);
             taggedBundle.setId(UUID.randomUUID().toString());
             taggedBundle.getMeta().setLastUpdatedElement(InstantType.now());
+            taggedBundle.setTotal(taggedBundle.getEntry().size());
 
-//            // Validate the segmented Bundle
-//            final ValidationResult validationResult = fhirValidator.validateWithResult(taggedBundle);
-//            Assert.isTrue(validationResult.isSuccessful(), "FHIR validation is failed for the segmented bundle with " + validationResult.getMessages().size() + " messages");
+            // Assert is valid FHIR Bundle
+//            assertIsValidateBundle(taggedBundle);
+
+            if (dssRequestForFhir.getEnableRedact().get()) {
+                dssRequestForFhir.setFhirStu3Bundle(taggedBundle);
+                redactFhirBundle(dssRequestForFhir);
+            }
 
             return DSSResponseForFhir.of(taggedBundle);
         } catch (IOException | SimpleMarshallerException e) {
             throw new DocumentSegmentationException(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public DSSResponseForFhir redactFhirBundle(DSSRequestForFhir dssRequestForFhir) {
+        return null;
+    }
+
+    private void assertIsValidateBundle(Bundle fhirbundle){
+        final ValidationResult taggedBundleValidationResult = fhirValidator.validateWithResult(fhirbundle);
+        Assert.isTrue(taggedBundleValidationResult.isSuccessful(), "FHIR validation is failed for the segmented bundle with " + taggedBundleValidationResult.getMessages().size() + " messages");
+    }
+
+    private void assertIsSearchSetBundle(Bundle fhirbundle){
+        Assert.isTrue(fhirbundle.getType().toCode().equalsIgnoreCase(FHIR_SEARCHSET_TYPE), "Unsupported FHIR bundle type");
+    }
+
+    private void assertIsSinglePatientPerBundle(Bundle fhirbundle){
+        Set<String> setOfPatientIds = new HashSet<>();
+        fhirbundle.getEntry().stream().forEach(entry ->{
+                Resource resource = entry.getResource();
+                try {
+                    List<Base> subjects = resource.listChildrenByName(FHIR_SUBJECT);
+                    subjects.stream().forEach(subject ->setOfPatientIds.add(subject.getChildByName(FHIR_REFERENCE).getValues().toString()));
+                } catch (FHIRException e) {
+                    logger.debug(() -> e.getMessage());
+                }
+        });
+        Assert.isTrue(setOfPatientIds.size() ==1, "Bundle contains resources for more than one patient.");
     }
 
     private String marshal(Object o) {

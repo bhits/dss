@@ -1,15 +1,15 @@
 package gov.samhsa.c2s.dss.service.dto;
 
-import gov.samhsa.c2s.dss.service.document.template.DocumentType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class ClinicalDocumentValidationResult {
-    private DocumentType documentType;
+    private String documentType;
     private boolean isValidDocument;
-
-    public ClinicalDocumentValidationResult(DocumentType documentType, boolean isValidDocument) {
-        this.documentType = documentType;
-        this.isValidDocument = isValidDocument;
-    }
 }

@@ -10,15 +10,16 @@ import gov.samhsa.c2s.common.log.Logger;
 import gov.samhsa.c2s.common.log.LoggerFactory;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerException;
-import gov.samhsa.c2s.common.validation.XmlValidation;
 import gov.samhsa.c2s.common.validation.exception.XmlDocumentReadFailureException;
+import gov.samhsa.c2s.dss.infrastructure.DocumentValidatorClient;
+import gov.samhsa.c2s.dss.infrastructure.dto.ValidationDiagnosticType;
+import gov.samhsa.c2s.dss.infrastructure.dto.ValidationRequestDto;
+import gov.samhsa.c2s.dss.infrastructure.dto.ValidationResponseDto;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ConceptCodeAndCodeSystemOidDto;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryMapResponseDto;
 import gov.samhsa.c2s.dss.service.document.*;
 import gov.samhsa.c2s.dss.service.document.dto.RedactedDocument;
-import gov.samhsa.c2s.dss.service.document.template.CCDAVersion;
-import gov.samhsa.c2s.dss.service.document.template.DocumentType;
 import gov.samhsa.c2s.dss.service.dto.ClinicalDocumentValidationResult;
 import gov.samhsa.c2s.dss.service.dto.DSSRequest;
 import gov.samhsa.c2s.dss.service.dto.DSSResponse;
@@ -54,6 +55,7 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
      */
     public static final String C32_CDA_XSD_NAME = "C32_CDA.xsd";
     public static final Charset DEFAULT_ENCODING = StandardCharsets.UTF_8;
+    private static final String CCDA_PREFIX = "CCDA";
 
     private final Logger logger = LoggerFactory
             .getLogger(this.getClass());
@@ -112,13 +114,11 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
     @Autowired
     private AdditionalMetadataGeneratorForSegmentedClinicalDocument additionalMetadataGeneratorForSegmentedClinicalDocument;
 
-    /**
-     * The xml validator.
-     */
-    private XmlValidation xmlValidator;
-
     @Autowired
     private ClinicalDocumentValidation clinicalDocumentValidation;
+
+    @Autowired
+    private DocumentValidatorClient documentValidatorClient;
 
     public DocumentSegmentationImpl() {
     }
@@ -157,7 +157,6 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
         this.embeddedClinicalDocumentExtractor = embeddedClinicalDocumentExtractor;
         this.valueSetService = valueSetService;
         this.additionalMetadataGeneratorForSegmentedClinicalDocument = additionalMetadataGeneratorForSegmentedClinicalDocument;
-        this.xmlValidator = createXmlValidator();
     }
 
     @SuppressWarnings("unchecked")
@@ -171,7 +170,7 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
         Assert.hasText(document);
 
         //Validate Original Document
-        final ClinicalDocumentValidationResult originalClinicalDocumentValidationResult = clinicalDocumentValidation.validateClinicalDocument(charset, document);
+        final ClinicalDocumentValidationResult originalClinicalDocumentValidationResult = validateOriginalClinicalDocument(dssRequest);
 
         Assert.notNull(dssRequest.getXacmlResult());
         final String enforcementPolicies = marshal(dssRequest.getXacmlResult());
@@ -274,7 +273,7 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
         }
 
         //Validate Segmented Document
-        clinicalDocumentValidation.validateClinicalDocumentAddAudited(originalClinicalDocumentValidationResult, charset, originalDocument, document, dssRequest,
+        validateAndAuditeSegmentedClinicalDocument(originalClinicalDocumentValidationResult, charset, originalDocument, document, dssRequest,
                 factModel, redactedDocument, rulesFired);
 
         DSSResponse dssResponse = new DSSResponse();
@@ -321,10 +320,35 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
                 rawData));
     }
 
-    private XmlValidation createXmlValidator() {
-        return new XmlValidation(this.getClass().getClassLoader()
-                .getResourceAsStream(C32_CDA_XSD_PATH + C32_CDA_XSD_NAME),
-                C32_CDA_XSD_PATH);
+    private ClinicalDocumentValidationResult validateOriginalClinicalDocument(DSSRequest dssRequest) throws InvalidOriginalClinicalDocumentException {
+        ValidationResponseDto responseDto = documentValidatorClient.validateClinicalDocument(ValidationRequestDto.builder()
+                .document(dssRequest.getDocument())
+                .documentEncoding(dssRequest.getDocumentEncoding())
+                .build());
+
+        if (!responseDto.isDocumentValid()) {
+            responseDto.getValidationResultDetails()
+                    .stream()
+                    .filter(errorType -> errorType.getDiagnosticType().getTypeName().contains(ValidationDiagnosticType.CCDA_ERROR.getTypeName()))
+                    .forEach(detail -> logger.error("Validation Error -- xPath: " + detail.getXPath() + ", Message: " + detail.getDescription()));
+            throw new InvalidOriginalClinicalDocumentException("C-CDA validation failed for document type " + responseDto.getDocumentType());
+        }
+
+        return ClinicalDocumentValidationResult.builder()
+                .documentType(responseDto.getDocumentType())
+                .isValidDocument(responseDto.isDocumentValid())
+                .build();
+    }
+
+    private void validateAndAuditeSegmentedClinicalDocument(ClinicalDocumentValidationResult originalClinicalDocumentValidationResult,
+                                                            Charset charset,
+                                                            String originalDocument,
+                                                            String document,
+                                                            DSSRequest dssRequest,
+                                                            FactModel factModel,
+                                                            RedactedDocument redactedDocument,
+                                                            String rulesFired) {
+
     }
 
     private Charset getCharset(Optional<String> documentEncoding) {
@@ -339,7 +363,7 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
         }
     }
 
-    private boolean isCCDADocument(DocumentType documentType) {
-        return documentType.isCCDA(CCDAVersion.R1) || documentType.isCCDA(CCDAVersion.R2);
+    private boolean isCCDADocument(String documentType) {
+        return documentType.contains(CCDA_PREFIX);
     }
 }

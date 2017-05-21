@@ -53,15 +53,6 @@ import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.*;
 @Service
 public class DocumentSegmentationImpl implements DocumentSegmentation {
 
-    /**
-     * The Constant C32_CDA_XSD_PATH.
-     */
-    public static final String C32_CDA_XSD_PATH = "schema/cdar2c32/infrastructure/cda/";
-
-    /**
-     * The Constant C32_CDA_XSD_NAME.
-     */
-    public static final String C32_CDA_XSD_NAME = "C32_CDA.xsd";
     public static final Charset DEFAULT_ENCODING = StandardCharsets.UTF_8;
     private static final String CCDA_PREFIX = "CCDA";
 

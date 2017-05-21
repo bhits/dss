@@ -332,17 +332,20 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
     }
 
     private ClinicalDocumentValidationResult validateOriginalClinicalDocument(DSSRequest dssRequest) throws InvalidOriginalClinicalDocumentException {
-        ValidationRequestDto validationRequestDto = new ValidationRequestDto();
-        validationRequestDto.setDocument(dssRequest.getDocument());
-
-        ValidationResponseDto responseDto = documentValidatorClient.validateClinicalDocument(validationRequestDto);
+        ValidationResponseDto responseDto = documentValidatorClient
+                .validateClinicalDocument(new ValidationRequestDto(dssRequest.getDocument()));
 
         if (!responseDto.isDocumentValid()) {
-            responseDto.getValidationResultDetails()
-                    .stream()
-                    .filter(errorType -> errorType.getDiagnosticType().getTypeName().contains(ValidationDiagnosticType.CCDA_ERROR.getTypeName()))
-                    .forEach(detail -> logger.error("Validation Error -- xPath: " + detail.getXPath() + ", Message: " + detail.getDescription()));
-            throw new InvalidOriginalClinicalDocumentException("C-CDA validation failed for document type " + responseDto.getDocumentType());
+            if (isCCDADocument(responseDto.getDocumentType())) {
+                responseDto.getValidationResultDetails()
+                        .stream()
+                        .filter(errorType -> errorType.getDiagnosticType().getTypeName().contains(ValidationDiagnosticType.CCDA_ERROR.getTypeName()))
+                        .forEach(detail -> logger.error("Validation Error -- xPath: " + detail.getXPath() + ", Message: " + detail.getDescription()));
+            } else {
+                responseDto.getValidationResultDetails()
+                        .forEach(detail -> logger.error("Schema Validation Error -- line number: " + detail.getDocumentLineNumber() + ", Message: " + detail.getDescription()));
+            }
+            throw new InvalidOriginalClinicalDocumentException("Validation failed for document type: " + responseDto.getDocumentType());
         }
 
         return ClinicalDocumentValidationResult.builder()
@@ -359,10 +362,8 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
                                                              FactModel factModel,
                                                              RedactedDocument redactedDocument,
                                                              String rulesFired) throws InvalidSegmentedClinicalDocumentException, AuditException {
-        ValidationRequestDto validationRequestDto = new ValidationRequestDto();
-        validationRequestDto.setDocument(segmentedDocument.getBytes(charset));
-
-        ValidationResponseDto responseDto = documentValidatorClient.validateClinicalDocument(validationRequestDto);
+        ValidationResponseDto responseDto = documentValidatorClient
+                .validateClinicalDocument(new ValidationRequestDto(segmentedDocument.getBytes(charset)));
 
         if (dssRequest.getAudited().orElse(dssProperties.getDocumentSegmentationImpl().isDefaultIsAudited())) {
             auditSegmentation(originalDocument, segmentedDocument,
@@ -374,11 +375,16 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
         }
 
         if (!responseDto.isDocumentValid()) {
-            responseDto.getValidationResultDetails()
-                    .stream()
-                    .filter(errorType -> errorType.getDiagnosticType().getTypeName().contains(ValidationDiagnosticType.CCDA_ERROR.getTypeName()))
-                    .forEach(detail -> logger.error("Validation Error -- xPath: " + detail.getXPath() + ", Message: " + detail.getDescription()));
-            throw new InvalidSegmentedClinicalDocumentException("C-CDA validation failed for document type " + responseDto.getDocumentType());
+            if (isCCDADocument(responseDto.getDocumentType())) {
+                responseDto.getValidationResultDetails()
+                        .stream()
+                        .filter(errorType -> errorType.getDiagnosticType().getTypeName().contains(ValidationDiagnosticType.CCDA_ERROR.getTypeName()))
+                        .forEach(detail -> logger.error("Validation Error -- xPath: " + detail.getXPath() + ", Message: " + detail.getDescription()));
+            } else {
+                responseDto.getValidationResultDetails()
+                        .forEach(detail -> logger.error("Schema Validation Error -- line number: " + detail.getDocumentLineNumber() + ", Message: " + detail.getDescription()));
+            }
+            throw new InvalidSegmentedClinicalDocumentException("Validation failed for document type: " + responseDto.getDocumentType());
         }
     }
 

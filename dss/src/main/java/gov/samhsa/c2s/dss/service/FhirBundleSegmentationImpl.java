@@ -48,6 +48,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     private static final String FHIR_CONFIDENTIALITY_CODE_V = "V";
     private static final String FHIR_CONFIDENTIALITY_CODE_R = "R";
     private static final String FHIR_CONFIDENTIALITY_CODE_N = "N";
+    private static final String FHIR_CONFIDENTIALITY = "Confidentiality";
 
     private final Logger logger = LoggerFactory.getLogger(this);
 
@@ -179,10 +180,13 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
 //            assertIsValidateBundle(taggedBundle);
 
             if (isRedactionEnable(dssRequestForFhir)) {
+                updateBundleMetaInformation(taggedBundle);
                 dssRequestForFhir.setFhirStu3Bundle(taggedBundle);
-                updateConfidentiality(dssRequestForFhir);
-               return  redactFhirBundle(dssRequestForFhir);
+                Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir);
+                updateConfidentiality(redactedFhirBundle);
+               return  DSSResponseForFhir.of(redactedFhirBundle);
             }else{
+                updateBundleMetaInformation(taggedBundle);
                 return DSSResponseForFhir.of(taggedBundle);
             }
         } catch (IOException | SimpleMarshallerException e) {
@@ -195,15 +199,16 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     }
 
     private Bundle recreateBundle(final String cleanedUpTaggedBundleXml ){
-        final Bundle taggedBundle = (Bundle) fhirXmlParser.parseResource(cleanedUpTaggedBundleXml);
-        taggedBundle.setId(UUID.randomUUID().toString());
-        taggedBundle.getMeta().setLastUpdatedElement(InstantType.now());
-        taggedBundle.setTotal(taggedBundle.getEntry().size());
+        return (Bundle) fhirXmlParser.parseResource(cleanedUpTaggedBundleXml);
+    }
 
-        return taggedBundle;
+    private void updateBundleMetaInformation(Bundle fhirStu3Bundle){
+        fhirStu3Bundle.setId(UUID.randomUUID().toString());
+        fhirStu3Bundle.getMeta().setLastUpdatedElement(InstantType.now());
+        fhirStu3Bundle.setTotal(fhirStu3Bundle.getEntry().size());
     }
     @Override
-    public DSSResponseForFhir redactFhirBundle(DSSRequestForFhir dssRequestForFhir) {
+    public Bundle redactFhirBundle(DSSRequestForFhir dssRequestForFhir) {
         Bundle fhirbundle = dssRequestForFhir.getFhirStu3Bundle();
         logger.debug(() -> "Entry Size before redaction: " + fhirbundle.getEntry().size());
         List<Bundle.BundleEntryComponent> taggedEntries = fhirbundle.getEntry().stream()
@@ -212,23 +217,47 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
 
         fhirbundle.getEntry().removeAll(taggedEntries);
         logger.debug(() -> "Entry Size after redaction: " + fhirbundle.getEntry().size());
-        return DSSResponseForFhir.of(fhirbundle);
+        return fhirbundle;
     }
 
-    private void updateConfidentiality(DSSRequestForFhir dssRequestForFhir){
-        Bundle fhirStu3Bundle = dssRequestForFhir.getFhirStu3Bundle();
+    @Override
+    public DSSResponseForFhir redactAndUpdateFhirBundle(DSSRequestForFhir dssRequestForFhir) {
+        Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir);
+
+        updateBundleMetaInformation(redactedFhirBundle);
+        updateConfidentiality(redactedFhirBundle);
+
+        return  DSSResponseForFhir.of(redactedFhirBundle);
+    }
+
+    private void updateConfidentiality(Bundle fhirStu3Bundle){
         if(containsCondifidentialityCode(FHIR_CONFIDENTIALITY_CODE_V, fhirStu3Bundle)) {
             setBundleConfidentiality(FHIR_CONFIDENTIALITY_CODE_V,fhirStu3Bundle);
         }else if(containsCondifidentialityCode(FHIR_CONFIDENTIALITY_CODE_R, fhirStu3Bundle)){
             setBundleConfidentiality(FHIR_CONFIDENTIALITY_CODE_R,fhirStu3Bundle);
         }else if(containsCondifidentialityCode(FHIR_CONFIDENTIALITY_CODE_N, fhirStu3Bundle)){
             setBundleConfidentiality(FHIR_CONFIDENTIALITY_CODE_N,fhirStu3Bundle);
+        }else{
+            removeBundleConfidentiality(fhirStu3Bundle);
         }
     }
 
     private void setBundleConfidentiality(String code, Bundle fhirbundle ){
-        // TODO should be different in case of multiple patient resource per bundle
-        fhirbundle.getMeta().getSecurity().get(0).setCode(code);
+        fhirbundle.getMeta().getSecurity().stream()
+                            .forEach(coding ->{
+                                if(coding.getSystem().contains(FHIR_CONFIDENTIALITY)){
+                                    coding.setCode(code);
+                                }
+                            } );
+    }
+
+    private void removeBundleConfidentiality(Bundle fhirbundle ){
+        // Get confidentiality codings
+        List<Coding> securityCodings =
+                fhirbundle.getMeta().getSecurity().stream()
+                .filter(coding -> coding.getSystem().contains(FHIR_CONFIDENTIALITY) )
+                .collect(Collectors.toList());
+        fhirbundle.getMeta().getSecurity().removeAll(securityCodings);
     }
 
     private boolean containsCondifidentialityCode(String code,Bundle fhirbundle  ){

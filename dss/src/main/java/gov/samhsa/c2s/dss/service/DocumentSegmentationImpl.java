@@ -360,7 +360,6 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
             auditSegmentation(originalDocument, segmentedDocument,
                     factModel.getXacmlResult(), redactedDocument,
                     rulesFired, originalClinicalDocumentValidationResult.isValidDocument(),
-                    //TODO: Must be true?
                     responseDto.isDocumentValid(),
                     dssRequest.getAuditFailureByPass().orElse(dssProperties.getDocumentSegmentationImpl().isDefaultIsAuditFailureByPass()));
         }

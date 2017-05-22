@@ -2,14 +2,14 @@ package gov.samhsa.c2s.dss.infrastructure.dto;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum DiagnosticType {
-    CCDA_ERROR("C-CDA ERROR"),
-    CCDA_WARN("C-CDA WARNING"),
-    CCDA_INFO("C-CDA INFO");
+public enum ValidationDiagnosticType {
+    CCDA_ERROR("C-CDA MDHT Conformance ERROR"),
+    CCDA_WARN("C-CDA MDHT Conformance WARNING"),
+    CCDA_INFO("C-CDA MDHT Conformance INFO");
 
     private String errorTypeName;
 
-    DiagnosticType(String type) {
+    ValidationDiagnosticType(String type) {
         errorTypeName = type;
     }
 

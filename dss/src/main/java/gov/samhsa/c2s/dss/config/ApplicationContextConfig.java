@@ -13,10 +13,6 @@ import gov.samhsa.c2s.common.filereader.FileReader;
 import gov.samhsa.c2s.common.filereader.FileReaderImpl;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerImpl;
-import gov.samhsa.c2s.dss.infrastructure.validator.CCDAValidatorService;
-import gov.samhsa.c2s.dss.infrastructure.validator.CCDAValidatorServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,9 +21,6 @@ import org.springframework.web.client.RestTemplate;
 
 @Configuration
 public class ApplicationContextConfig {
-
-    public static final String CCDA_R1_VALIDATOR_SERVICE = "ccdaR1ValidatorService";
-    public static final String CCDA_R2_VALIDATOR_SERVICE = "ccdaR2ValidatorService";
 
     @Bean
     @ConditionalOnBean(AuditClientProperties.class)
@@ -58,18 +51,6 @@ public class ApplicationContextConfig {
     @Bean
     public XmlTransformer xmlTransformer() {
         return new XmlTransformerImpl(simpleMarshaller());
-    }
-
-    @Bean
-    @Qualifier(CCDA_R1_VALIDATOR_SERVICE)
-    public CCDAValidatorService ccdaValidatorServiceR1(@Autowired DssProperties dssProperties) {
-        return new CCDAValidatorServiceImpl(dssProperties.getValidator().getCCda().getR1(), restTemplate());
-    }
-
-    @Bean
-    @Qualifier(CCDA_R2_VALIDATOR_SERVICE)
-    public CCDAValidatorService ccdaValidatorServiceR2(@Autowired DssProperties dssProperties) {
-        return new CCDAValidatorServiceImpl(dssProperties.getValidator().getCCda().getR2(), restTemplate());
     }
 
     @Bean

@@ -25,4 +25,9 @@ public class FhirBundleSegmentationRestController {
     public DSSResponseForFhir segmentFhirBundle(@Valid @RequestBody DSSRequestForFhir request) throws InvalidSegmentedClinicalDocumentException, AuditException, XmlDocumentReadFailureException, InvalidOriginalClinicalDocumentException {
         return fhirBundleSegmentation.segmentFhirBundle(request);
     }
+
+    @RequestMapping(value = "/redactedFhirBundle", method = RequestMethod.POST)
+    public DSSResponseForFhir redactFhirBundle(@Valid @RequestBody DSSRequestForFhir request) throws InvalidSegmentedClinicalDocumentException, AuditException, XmlDocumentReadFailureException, InvalidOriginalClinicalDocumentException {
+        return fhirBundleSegmentation.redactFhirBundle(request);
+    }
 }

@@ -93,8 +93,8 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
             //Assumption: Ensure bundle contains resources for one patient
             assertIsSinglePatientPerBundle(fhirBundle);
 
-            // Assert is valid FHIR Bundle
-//            assertIsValidateBundle(fhirBundle);
+            // Validate bundle
+            validateBundleIfEnable(dssRequestForFhir.getEnableBundleValidation().get(), fhirBundle);
 
             // Convert FHIR Bundle to XML
             final String originalFhirBundleXml = fhirXmlParser.encodeResourceToString(fhirBundle);
@@ -176,8 +176,8 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
             // Update `Bundle.meta.lastUpdated` and `Bundle.id`
             final Bundle taggedBundle = recreateBundle(cleanedUpTaggedBundleXml);
 
-            // Assert is valid FHIR Bundle
-//            assertIsValidateBundle(taggedBundle);
+            // Validate bundle after tagging
+            validateBundleIfEnable(dssRequestForFhir.getEnableBundleValidation().get(), taggedBundle);
 
             if (isRedactionEnable(dssRequestForFhir)) {
                 updateBundleMetaInformation(taggedBundle);
@@ -222,12 +222,23 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
 
     @Override
     public DSSResponseForFhir redactAndUpdateFhirBundle(DSSRequestForFhir dssRequestForFhir) {
-        Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir);
+        // Validate bundle before redaction
+        validateBundleIfEnable(dssRequestForFhir.getEnableBundleValidation().get(), dssRequestForFhir.getFhirStu3Bundle());
 
+        Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir);
         updateBundleMetaInformation(redactedFhirBundle);
         updateConfidentiality(redactedFhirBundle);
 
+        // Validate bundle after redaction
+        validateBundleIfEnable(dssRequestForFhir.getEnableBundleValidation().get(), dssRequestForFhir.getFhirStu3Bundle());
+
         return  DSSResponseForFhir.of(redactedFhirBundle);
+    }
+
+    private void validateBundleIfEnable(boolean shouldValidate, Bundle fhirStu3Bundle){
+        if(shouldValidate){
+            assertIsValidateBundle(fhirStu3Bundle);
+        }
     }
 
     private void updateConfidentiality(Bundle fhirStu3Bundle){
@@ -270,6 +281,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
 
     private void assertIsValidateBundle(Bundle fhirbundle){
         final ValidationResult taggedBundleValidationResult = fhirValidator.validateWithResult(fhirbundle);
+        taggedBundleValidationResult.getMessages().stream().forEach(error -> System.out.println("Error: " + error.getMessage()));
         Assert.isTrue(taggedBundleValidationResult.isSuccessful(), "FHIR validation is failed for the segmented bundle with " + taggedBundleValidationResult.getMessages().size() + " messages");
     }
 

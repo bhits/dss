@@ -62,7 +62,6 @@
         <saxon-HE.version>9.6.0-3</saxon-HE.version>
         <axiom-api.version>1.2.17</axiom-api.version>
         <xmlsec.version>1.3.0</xmlsec.version>
-        <logback.version>1.1.7</logback.version>
         <lombok.version>1.16.6</lombok.version>
         <!-- BRMS Libraries' version -->
         <drools.version>5.4.0.Final</drools.version>
@@ -227,15 +226,6 @@
                     <artifactId>spring-boot-starter-test</artifactId>
                     <scope>test</scope>
                 </dependency>
-
-                <!-- Logback -->
-                <dependency>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-core</artifactId>
-                    <version>${logback.version}</version>
-                </dependency>
-
-
             </dependencies>
 
             <dependencyManagement>

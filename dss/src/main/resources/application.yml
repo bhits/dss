@@ -14,10 +14,6 @@ c2s:
       serviceUsername: admin
       servicePassword: admin
   dss:
-    validator:
-      c-cda:
-        r1: http://localhost:8080/documentValidator/r1/validator
-        r2: http://localhost:8080/documentValidator/r2/validator
     redact:
       headersWhiteList:
         - "realmCode"
@@ -87,10 +83,6 @@ server:
 spring.profiles: docker
 c2s:
   dss:
-    validator:
-      c-cda:
-        r1: http://document-validator-ccda-r1.c2s.com:8080/documentValidator/validator
-        r2: http://document-validator-ccda-r2.c2s.com:8080/documentValidator/validator
     audit-service:
       host: logback-audit-server.c2s.com
   brms:

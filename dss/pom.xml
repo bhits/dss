@@ -89,10 +89,6 @@
             <dependencies>
                 <dependency>
                     <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-web</artifactId>
                 </dependency>
                 <dependency>
@@ -113,10 +109,6 @@
                     <artifactId>spring-cloud-starter-feign</artifactId>
                 </dependency>
                 <dependency>
-                    <groupId>org.springframework.cloud</groupId>
-                    <artifactId>spring-cloud-starter-oauth2</artifactId>
-                </dependency>
-                <dependency>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-actuator</artifactId>
                 </dependency>
@@ -134,11 +126,6 @@
                     <artifactId>jackson-datatype-jdk8</artifactId>
                 </dependency>
                 <!-- C2S Common Libraries -->
-                <dependency>
-                    <groupId>gov.samhsa.c2s</groupId>
-                    <artifactId>oauth2</artifactId>
-                    <version>${c2s.common-libraries.version}</version>
-                </dependency>
                 <dependency>
                     <groupId>gov.samhsa.c2s</groupId>
                     <artifactId>logger-wrapper</artifactId>
@@ -304,6 +291,9 @@
                         <configuration>
                             <imageName>bhits/${project.artifactId}</imageName>
                             <dockerDirectory>src/main/docker</dockerDirectory>
+                            <imageTags>
+                                <imageTag>${project.version}</imageTag>
+                            </imageTags>
                             <buildArgs>
                                 <finalName>${project.build.finalName}.jar</finalName>
                             </buildArgs>

@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import javax.validation.Valid;
 
 @FeignClient("document-validator")
+// Get configured context-path
+@RequestMapping(value = "${c2s.dss.document-validator.context-path:/}")
 public interface DocumentValidatorClient {
 
-    @RequestMapping(value = "/document-validator/documentValidation", method = RequestMethod.POST)
+    @RequestMapping(value = "/documentValidation", method = RequestMethod.POST)
     ValidationResponseDto validateClinicalDocument(@Valid @RequestBody ValidationRequestDto requestDto);
 }

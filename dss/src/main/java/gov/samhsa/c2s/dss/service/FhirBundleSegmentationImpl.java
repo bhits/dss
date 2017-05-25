@@ -48,7 +48,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     private static final String FHIR_CONFIDENTIALITY_CODE_V = "V";
     private static final String FHIR_CONFIDENTIALITY_CODE_R = "R";
     private static final String FHIR_CONFIDENTIALITY_CODE_N = "N";
-    private static final String FHIR_CONFIDENTIALITY = "Confidentiality";
+    private static final String FHIR_SYSTEM_CONFIDENTIALITY = "http://hl7.org/fhir/v3/Confidentiality";
 
     private final Logger logger = LoggerFactory.getLogger(this);
 
@@ -94,7 +94,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
             assertIsSinglePatientPerBundle(fhirBundle);
 
             // Validate bundle
-            validateBundleIfEnable(dssRequestForFhir.getEnableBundleValidation().get(), fhirBundle);
+            validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().get(), fhirBundle);
 
             // Convert FHIR Bundle to XML
             final String originalFhirBundleXml = fhirXmlParser.encodeResourceToString(fhirBundle);
@@ -177,12 +177,12 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
             final Bundle taggedBundle = recreateBundle(cleanedUpTaggedBundleXml);
 
             // Validate bundle after tagging
-            validateBundleIfEnable(dssRequestForFhir.getEnableBundleValidation().get(), taggedBundle);
+            validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().get(), taggedBundle);
 
-            if (isRedactionEnable(dssRequestForFhir)) {
-                updateBundleMetaInformation(taggedBundle);
+            if (isRedactionEnabled(dssRequestForFhir)) {
                 dssRequestForFhir.setFhirStu3Bundle(taggedBundle);
                 Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir);
+                updateBundleMetaInformation(redactedFhirBundle);
                 updateConfidentiality(redactedFhirBundle);
                return  DSSResponseForFhir.of(redactedFhirBundle);
             }else{
@@ -194,7 +194,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
         }
     }
 
-    boolean isRedactionEnable(DSSRequestForFhir dssRequestForFhir){
+    boolean isRedactionEnabled(DSSRequestForFhir dssRequestForFhir){
         return dssRequestForFhir.getEnableRedact().get();
     }
 
@@ -223,19 +223,19 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     @Override
     public DSSResponseForFhir redactAndUpdateFhirBundle(DSSRequestForFhir dssRequestForFhir) {
         // Validate bundle before redaction
-        validateBundleIfEnable(dssRequestForFhir.getEnableBundleValidation().get(), dssRequestForFhir.getFhirStu3Bundle());
+        validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().get(), dssRequestForFhir.getFhirStu3Bundle());
 
         Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir);
         updateBundleMetaInformation(redactedFhirBundle);
         updateConfidentiality(redactedFhirBundle);
 
         // Validate bundle after redaction
-        validateBundleIfEnable(dssRequestForFhir.getEnableBundleValidation().get(), dssRequestForFhir.getFhirStu3Bundle());
+        validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().get(), dssRequestForFhir.getFhirStu3Bundle());
 
         return  DSSResponseForFhir.of(redactedFhirBundle);
     }
 
-    private void validateBundleIfEnable(boolean shouldValidate, Bundle fhirStu3Bundle){
+    private void validateBundleIfEnabled(boolean shouldValidate, Bundle fhirStu3Bundle){
         if(shouldValidate){
             assertIsValidateBundle(fhirStu3Bundle);
         }
@@ -256,7 +256,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     private void setBundleConfidentiality(String code, Bundle fhirbundle ){
         fhirbundle.getMeta().getSecurity().stream()
                             .forEach(coding ->{
-                                if(coding.getSystem().contains(FHIR_CONFIDENTIALITY)){
+                                if(coding.getSystem().contains(FHIR_SYSTEM_CONFIDENTIALITY)){
                                     coding.setCode(code);
                                 }
                             } );
@@ -266,7 +266,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
         // Get confidentiality codings
         List<Coding> securityCodings =
                 fhirbundle.getMeta().getSecurity().stream()
-                .filter(coding -> coding.getSystem().contains(FHIR_CONFIDENTIALITY) )
+                .filter(coding -> coding.getSystem().contains(FHIR_SYSTEM_CONFIDENTIALITY) )
                 .collect(Collectors.toList());
         fhirbundle.getMeta().getSecurity().removeAll(securityCodings);
     }

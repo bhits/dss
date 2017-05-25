@@ -12,6 +12,6 @@ import javax.validation.Valid;
 @FeignClient("document-validator")
 public interface DocumentValidatorClient {
 
-    @RequestMapping(value = "/documentValidation", method = RequestMethod.POST)
+    @RequestMapping(value = "/document-validator/documentValidation", method = RequestMethod.POST)
     ValidationResponseDto validateClinicalDocument(@Valid @RequestBody ValidationRequestDto requestDto);
 }

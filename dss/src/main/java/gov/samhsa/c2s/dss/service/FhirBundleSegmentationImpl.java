@@ -17,12 +17,14 @@ import gov.samhsa.c2s.common.util.StringURIResolver;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ConceptCodeAndCodeSystemOidDto;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryMapResponseDto;
+import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryResponseDto;
 import gov.samhsa.c2s.dss.service.dto.DSSRequestForFhir;
 import gov.samhsa.c2s.dss.service.dto.DSSResponseForFhir;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
 import gov.samhsa.c2s.dss.service.fhir.EmbeddedFhirBundleExtractor;
 import gov.samhsa.c2s.dss.service.fhir.FhirBundleRedactor;
 import org.hl7.fhir.dstu3.model.*;
+import org.hl7.fhir.dstu3.model.Resource;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -209,15 +211,56 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     }
     @Override
     public Bundle redactFhirBundle(DSSRequestForFhir dssRequestForFhir) {
+
+        List<ValueSetCategoryResponseDto> valueSetCategories = valueSetService.getAllValueSetCategories();
         Bundle fhirbundle = dssRequestForFhir.getFhirStu3Bundle();
         logger.debug(() -> "Entry Size before redaction: " + fhirbundle.getEntry().size());
-        List<Bundle.BundleEntryComponent> taggedEntries = fhirbundle.getEntry().stream()
-                             .filter(entry ->entry.getResource().getMeta().getSecurity().size() > 0)
-                             .collect(Collectors.toList());
+        List<Bundle.BundleEntryComponent> entriesToBeRedacted = new ArrayList<>();
+        fhirbundle.getEntry().stream()
+                     .forEach(entry ->{
 
-        fhirbundle.getEntry().removeAll(taggedEntries);
+                         // Determine which security labels are Sensitive
+                         List<Coding> securityLabels = entry.getResource().getMeta().getSecurity();
+                         List<Coding> sensitiveSecurityLabels = getSensitiveSecurityLabels(securityLabels, valueSetCategories);
+
+                         // Create a list of all the codings that do not match the PDP obligations
+                         List<String> pdpObligations = dssRequestForFhir.getXacmlResult().getPdpObligations();
+                         List<Coding> selectCodingForRedaction = createListOfCodingsNotInPdpObligation(sensitiveSecurityLabels,pdpObligations);
+
+                         // Add entry to list of entries to be redacted if atleast one coding
+                         // does not match the PDP onbligation
+                         if(selectCodingForRedaction.size() > 0 ){
+                             entriesToBeRedacted.add(entry);
+                         }
+                     });
+
+        fhirbundle.getEntry().removeAll(entriesToBeRedacted);
         logger.debug(() -> "Entry Size after redaction: " + fhirbundle.getEntry().size());
         return fhirbundle;
+    }
+
+    private List<Coding> getSensitiveSecurityLabels(List<Coding> securityLables, List<ValueSetCategoryResponseDto> valueSetCategories){
+        List<Coding> sensitiveSecurityLabels = new ArrayList<>();
+        securityLables.stream().forEach( coding -> {
+            boolean codingIsSensitive = valueSetCategories.stream().anyMatch(valueSetCategory -> (valueSetCategory.getCode().equals(coding.getCode())
+                    && valueSetCategory.getSystem().equals(coding.getSystem())));
+            if(codingIsSensitive){
+                sensitiveSecurityLabels.add(coding);
+            }
+        });
+
+        return sensitiveSecurityLabels;
+    }
+
+    private List<Coding> createListOfCodingsNotInPdpObligation(List<Coding> sensitiveSecurityLabels, List<String> pdpObligations){
+        List<Coding> selectCodingForRedaction = new ArrayList<>();
+        sensitiveSecurityLabels.stream().forEach(coding -> {
+            if(!pdpObligations.contains(coding.getCode())){
+                selectCodingForRedaction.add(coding);
+            }
+        });
+
+        return selectCodingForRedaction;
     }
 
     @Override

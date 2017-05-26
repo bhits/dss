@@ -183,7 +183,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
 
             if (isRedactionEnabled(dssRequestForFhir)) {
                 dssRequestForFhir.setFhirStu3Bundle(taggedBundle);
-                Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir);
+                Bundle redactedFhirBundle = redactFhirBundle(taggedBundle, dssRequestForFhir.getXacmlResult());
                 updateBundleMetaInformation(redactedFhirBundle);
                 updateConfidentiality(redactedFhirBundle);
                return  DSSResponseForFhir.of(redactedFhirBundle);
@@ -210,10 +210,9 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
         fhirStu3Bundle.setTotal(fhirStu3Bundle.getEntry().size());
     }
     @Override
-    public Bundle redactFhirBundle(DSSRequestForFhir dssRequestForFhir) {
+    public Bundle redactFhirBundle(Bundle fhirbundle,XacmlResult xacmlResult) {
 
         List<ValueSetCategoryResponseDto> valueSetCategories = valueSetService.getAllValueSetCategories();
-        Bundle fhirbundle = dssRequestForFhir.getFhirStu3Bundle();
         logger.debug(() -> "Entry Size before redaction: " + fhirbundle.getEntry().size());
         List<Bundle.BundleEntryComponent> entriesToBeRedacted = new ArrayList<>();
         fhirbundle.getEntry().stream()
@@ -224,7 +223,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
                          List<Coding> sensitiveSecurityLabels = getSensitiveSecurityLabels(securityLabels, valueSetCategories);
 
                          // Create a list of all the codings that do not match the PDP obligations
-                         List<String> pdpObligations = dssRequestForFhir.getXacmlResult().getPdpObligations();
+                         List<String> pdpObligations = xacmlResult.getPdpObligations();
                          List<Coding> selectCodingForRedaction = createListOfCodingsNotInPdpObligation(sensitiveSecurityLabels,pdpObligations);
 
                          // Add entry to list of entries to be redacted if atleast one coding
@@ -268,7 +267,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
         // Validate bundle before redaction
         validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().get(), dssRequestForFhir.getFhirStu3Bundle());
 
-        Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir);
+        Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir.getFhirStu3Bundle(), dssRequestForFhir.getXacmlResult());
         updateBundleMetaInformation(redactedFhirBundle);
         updateConfidentiality(redactedFhirBundle);
 

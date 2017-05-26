@@ -58,10 +58,10 @@ import static org.mockito.Mockito.*;
 
 public class FhirBundleSegmentationImplTest {
 
-//    @Before
-//    public void setUp() throws
-//            Exception {
-//
-//    }
+    @Before
+    public void setUp() throws
+            Exception {
+
+    }
 
 }

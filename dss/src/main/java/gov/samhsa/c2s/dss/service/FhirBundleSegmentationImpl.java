@@ -96,7 +96,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
             assertIsSinglePatientPerBundle(fhirBundle);
 
             // Validate bundle
-            validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().get(), fhirBundle);
+            validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().orElse(false), fhirBundle);
 
             // Convert FHIR Bundle to XML
             final String originalFhirBundleXml = fhirXmlParser.encodeResourceToString(fhirBundle);
@@ -179,7 +179,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
             final Bundle taggedBundle = recreateBundle(cleanedUpTaggedBundleXml);
 
             // Validate bundle after tagging
-            validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().get(), taggedBundle);
+            validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().orElse(false), taggedBundle);
 
             if (isRedactionEnabled(dssRequestForFhir)) {
                 dssRequestForFhir.setFhirStu3Bundle(taggedBundle);
@@ -197,7 +197,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     }
 
     boolean isRedactionEnabled(DSSRequestForFhir dssRequestForFhir){
-        return dssRequestForFhir.getEnableRedact().get();
+        return dssRequestForFhir.getEnableRedact().orElse(false);
     }
 
     private Bundle recreateBundle(final String cleanedUpTaggedBundleXml ){
@@ -265,14 +265,14 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     @Override
     public DSSResponseForFhir redactAndUpdateFhirBundle(DSSRequestForFhir dssRequestForFhir) {
         // Validate bundle before redaction
-        validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().get(), dssRequestForFhir.getFhirStu3Bundle());
+        validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().orElse(false), dssRequestForFhir.getFhirStu3Bundle());
 
         Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir.getFhirStu3Bundle(), dssRequestForFhir.getXacmlResult());
         updateBundleMetaInformation(redactedFhirBundle);
         updateConfidentiality(redactedFhirBundle);
 
         // Validate bundle after redaction
-        validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().get(), dssRequestForFhir.getFhirStu3Bundle());
+        validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().orElse(false), dssRequestForFhir.getFhirStu3Bundle());
 
         return  DSSResponseForFhir.of(redactedFhirBundle);
     }
@@ -298,7 +298,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     private void setBundleConfidentiality(String code, Bundle fhirbundle ){
         fhirbundle.getMeta().getSecurity().stream()
                             .forEach(coding ->{
-                                if(coding.getSystem().contains(FHIR_SYSTEM_CONFIDENTIALITY)){
+                                if(coding.getSystem().equals(FHIR_SYSTEM_CONFIDENTIALITY)){
                                     coding.setCode(code);
                                 }
                             } );
@@ -308,7 +308,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
         // Get confidentiality codings
         List<Coding> securityCodings =
                 fhirbundle.getMeta().getSecurity().stream()
-                .filter(coding -> coding.getSystem().contains(FHIR_SYSTEM_CONFIDENTIALITY) )
+                .filter(coding -> coding.getSystem().equals(FHIR_SYSTEM_CONFIDENTIALITY) )
                 .collect(Collectors.toList());
         fhirbundle.getMeta().getSecurity().removeAll(securityCodings);
     }
@@ -323,7 +323,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
 
     private void assertIsValidateBundle(Bundle fhirbundle){
         final ValidationResult taggedBundleValidationResult = fhirValidator.validateWithResult(fhirbundle);
-        taggedBundleValidationResult.getMessages().stream().forEach(error -> System.out.println("Error: " + error.getMessage()));
+        taggedBundleValidationResult.getMessages().stream().forEach(error ->logger.debug(() -> "Error: " + error.getMessage()));
         Assert.isTrue(taggedBundleValidationResult.isSuccessful(), "FHIR validation is failed for the segmented bundle with " + taggedBundleValidationResult.getMessages().size() + " messages");
     }
 

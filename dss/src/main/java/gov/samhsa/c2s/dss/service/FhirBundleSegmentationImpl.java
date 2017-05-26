@@ -217,19 +217,23 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
         List<Bundle.BundleEntryComponent> entriesToBeRedacted = new ArrayList<>();
         fhirbundle.getEntry().stream()
                      .forEach(entry ->{
-
                          // Determine which security labels are Sensitive
                          List<Coding> securityLabels = entry.getResource().getMeta().getSecurity();
-                         List<Coding> sensitiveSecurityLabels = getSensitiveSecurityLabels(securityLabels, valueSetCategories);
+                         // If resource is tagged otherwise ignore
+                         if(securityLabels.size() > 0 ){
+                             List<Coding> sensitiveSecurityLabels = getSensitiveSecurityLabels(securityLabels, valueSetCategories);
+                             // If security label is not sensitive ignore resource
+                             if(sensitiveSecurityLabels.size() > 0){
+                                 // Create a list of all the codings that do match the PDP obligations
+                                 List<String> pdpObligations = xacmlResult.getPdpObligations();
+                                 List<Coding> selectCodingForSharing = createListOfCodingsForSharing(sensitiveSecurityLabels,pdpObligations);
 
-                         // Create a list of all the codings that do not match the PDP obligations
-                         List<String> pdpObligations = xacmlResult.getPdpObligations();
-                         List<Coding> selectCodingForRedaction = createListOfCodingsNotInPdpObligation(sensitiveSecurityLabels,pdpObligations);
-
-                         // Add entry to list of entries to be redacted if atleast one coding
-                         // does not match the PDP onbligation
-                         if(selectCodingForRedaction.size() > 0 ){
-                             entriesToBeRedacted.add(entry);
+                                 // Add entry to list of entries to be redacted if atleast one coding
+                                 // does not match the PDP obligation
+                                 if(selectCodingForSharing.size() == 0 ){
+                                     entriesToBeRedacted.add(entry);
+                                 }
+                             }
                          }
                      });
 
@@ -251,15 +255,15 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
         return sensitiveSecurityLabels;
     }
 
-    private List<Coding> createListOfCodingsNotInPdpObligation(List<Coding> sensitiveSecurityLabels, List<String> pdpObligations){
-        List<Coding> selectCodingForRedaction = new ArrayList<>();
+    private List<Coding> createListOfCodingsForSharing(List<Coding> sensitiveSecurityLabels, List<String> pdpObligations){
+        List<Coding> selectCodingForSharing = new ArrayList<>();
         sensitiveSecurityLabels.stream().forEach(coding -> {
-            if(!pdpObligations.contains(coding.getCode())){
-                selectCodingForRedaction.add(coding);
+            if(pdpObligations.contains(coding.getCode())){
+                selectCodingForSharing.add(coding);
             }
         });
 
-        return selectCodingForRedaction;
+        return selectCodingForSharing;
     }
 
     @Override

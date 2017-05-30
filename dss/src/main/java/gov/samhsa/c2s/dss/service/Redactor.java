@@ -28,15 +28,15 @@ public interface Redactor extends CoreDocumentUtilitiesAware {
      */
     default void redactNodeIfNotNull(Node nodeToBeRedacted) {
         if (nodeToBeRedacted != null) {
-            // If displayName contains the code, it will be found twice and can
-            // already be removed. Therefore, we need to check the parent
+            /* If displayName contains the code, it will be found twice and can
+                already be removed. Therefore, we need to check the parent */
             try {
                 nodeToBeRedacted.getParentNode().removeChild(nodeToBeRedacted);
             } catch (final NullPointerException e) {
                 LoggerFactory.getLogger(this).info(() -> new StringBuilder()
                         .append("The node value '")
                         .append(nodeToBeRedacted.getNodeValue())
-                        .append("' must have been removed already, it cannot be removed again. This might happen if one of the search text contains the other and multiple criterias match to mark the node to be redacted.")
+                        .append("' must have been removed already, it cannot be removed again. This might happen if one of the search text contains the other and multiple criteria match to mark the node to be redacted.")
                         .toString());
             }
         }

@@ -23,7 +23,19 @@ import gov.samhsa.c2s.dss.service.dto.DSSResponseForFhir;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
 import gov.samhsa.c2s.dss.service.fhir.EmbeddedFhirBundleExtractor;
 import gov.samhsa.c2s.dss.service.fhir.FhirBundleRedactor;
-import org.hl7.fhir.dstu3.model.*;
+
+import java.util.Optional;
+import java.util.List;
+import java.util.UUID;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Objects;
+import org.hl7.fhir.dstu3.model.Bundle;
+import org.hl7.fhir.dstu3.model.Base;
+import org.hl7.fhir.dstu3.model.InstantType;
+import org.hl7.fhir.dstu3.model.Coding;
+
 import org.hl7.fhir.dstu3.model.Resource;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +45,7 @@ import org.springframework.util.Assert;
 
 import javax.xml.transform.URIResolver;
 import java.io.IOException;
-import java.util.*;
+
 import java.util.stream.Collectors;
 
 @Service
@@ -228,8 +240,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
                                  List<String> pdpObligations = xacmlResult.getPdpObligations();
                                  List<Coding> selectCodingForSharing = createListOfCodingsForSharing(sensitiveSecurityLabels,pdpObligations);
 
-                                 // Add entry to list of entries to be redacted if atleast one coding
-                                 // does not match the PDP obligation
+                                 // Add entry to list of entries to be redacted if at least one coding does not match the PDP obligation
                                  if(selectCodingForSharing.size() == 0 ){
                                      entriesToBeRedacted.add(entry);
                                  }
@@ -343,7 +354,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
                     List<Base> subjects = resource.listChildrenByName(FHIR_SUBJECT);
                     subjects.stream().forEach(subject ->setOfPatientIds.add(subject.getChildByName(FHIR_REFERENCE).getValues().toString()));
                 } catch (FHIRException e) {
-                    logger.debug(() -> e.getMessage());
+                    logger.warn(() -> e.getMessage());
                 }
         });
         Assert.isTrue(setOfPatientIds.size() == 1, "Bundle contains resources for more than one patient.");

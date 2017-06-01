@@ -332,7 +332,8 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
         return fhirbundle.getEntry().stream()
                 .anyMatch(entry ->
                     entry.getResource().getMeta().getSecurity().stream()
-                                        .anyMatch( coding -> coding.getCode().equals(FHIR_SYSTEM_CONFIDENTIALITY))
+                                        .filter(coding -> coding.getSystem().equals(FHIR_SYSTEM_CONFIDENTIALITY) )
+                                        .anyMatch( coding -> coding.getCode().equals(code))
         );
     }
 

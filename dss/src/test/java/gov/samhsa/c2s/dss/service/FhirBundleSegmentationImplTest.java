@@ -83,6 +83,10 @@ public class FhirBundleSegmentationImplTest {
         bundle.setMeta(new Meta().setLastUpdated(new Date()));
 
         List<Bundle.BundleEntryComponent> entries =  new ArrayList<>();
+
+        Bundle.BundleEntryComponent entryComponent =  new Bundle.BundleEntryComponent();
+        entryComponent.setFullUrl("https://fhirtest.uhn.ca/baseDstu2/Observation/13280");
+
         bundle.setEntry(entries);
 
         return bundle;

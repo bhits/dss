@@ -237,7 +237,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
                              // If security label is not sensitive ignore resource
                              if(sensitiveSecurityLabels.size() > 0){
                                  // Create a list of all the codings that do match the PDP obligations
-                                 List<String> pdpObligations = xacmlResult.getPdpObligations();
+                                     List<String> pdpObligations = xacmlResult.getPdpObligations();
                                  List<Coding> selectCodingForSharing = createListOfCodingsForSharing(sensitiveSecurityLabels,pdpObligations);
 
                                  // Add entry to list of entries to be redacted if at least one coding does not match the PDP obligation

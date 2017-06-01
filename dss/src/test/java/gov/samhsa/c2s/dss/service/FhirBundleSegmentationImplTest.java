@@ -28,6 +28,8 @@ import gov.samhsa.c2s.dss.service.metadata.AdditionalMetadataGeneratorForSegment
 import gov.samhsa.c2s.dss.service.metadata.MetadataGeneratorImpl;
 import org.apache.xml.security.encryption.XMLCipher;
 import org.apache.xml.security.utils.EncryptionConstants;
+import org.hl7.fhir.dstu3.model.Bundle;
+import org.hl7.fhir.dstu3.model.Meta;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -41,9 +43,7 @@ import javax.crypto.spec.DESedeKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -58,10 +58,33 @@ import static org.mockito.Mockito.*;
 
 public class FhirBundleSegmentationImplTest {
 
+    private static final String FHIR_SEARCHSET_TYPE = "searchset";
+    private static final String FHIR_REFERENCE = "reference";
+    private static final String FHIR_SUBJECT = "subject";
+
+    private static final String FHIR_CONFIDENTIALITY_CODE_V = "V";
+    private static final String FHIR_CONFIDENTIALITY_CODE_R = "R";
+    private static final String FHIR_CONFIDENTIALITY_CODE_N = "N";
+    private static final String FHIR_SYSTEM_CONFIDENTIALITY = "http://hl7.org/fhir/v3/Confidentiality";
+
     @Before
     public void setUp() throws
             Exception {
-
     }
 
+    @Test
+    void unit_test_bundleConfidentialities(){
+    }
+
+    private Bundle createFhirBundle(){
+        Bundle bundle = new Bundle();
+        bundle.setType(Bundle.BundleType.SEARCHSET);
+//        bundle.setTotal(2);
+        bundle.setMeta(new Meta().setLastUpdated(new Date()));
+
+        List<Bundle.BundleEntryComponent> entries =  new ArrayList<>();
+        bundle.setEntry(entries);
+
+        return bundle;
+    }
 }

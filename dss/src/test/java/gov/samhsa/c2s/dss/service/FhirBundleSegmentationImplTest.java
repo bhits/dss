@@ -1,7 +1,8 @@
 package gov.samhsa.c2s.dss.service;
 
 import ch.qos.logback.audit.AuditException;
-import gov.samhsa.c2s.brms.domain.*;
+import gov.samhsa.c2s.brms.domain.XacmlResult;
+import gov.samhsa.c2s.brms.domain.SubjectPurposeOfUse;
 import gov.samhsa.c2s.brms.service.RuleExecutionService;
 import gov.samhsa.c2s.brms.service.dto.AssertAndExecuteClinicalFactsResponse;
 import gov.samhsa.c2s.common.audit.AuditClientImpl;
@@ -30,7 +31,11 @@ import gov.samhsa.c2s.dss.service.metadata.AdditionalMetadataGeneratorForSegment
 import gov.samhsa.c2s.dss.service.metadata.MetadataGeneratorImpl;
 import org.apache.xml.security.encryption.XMLCipher;
 import org.apache.xml.security.utils.EncryptionConstants;
-import org.hl7.fhir.dstu3.model.*;
+import org.hl7.fhir.dstu3.model.Bundle;
+import org.hl7.fhir.dstu3.model.Meta;
+import org.hl7.fhir.dstu3.model.Observation;
+import org.hl7.fhir.dstu3.model.Reference;
+import org.hl7.fhir.dstu3.model.CodeableConcept;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -45,7 +50,11 @@ import javax.crypto.spec.DESedeKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.Date;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -56,7 +65,8 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class FhirBundleSegmentationImplTest {
 

@@ -65,7 +65,9 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
         marshaller = new SimpleMarshallerImpl();
         documentAccessor = new DocumentAccessorImpl();
         documentXmlConverter = new DocumentXmlConverterImpl();
-        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl(documentXmlConverter, documentAccessor);
+        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl();
+        ReflectionTestUtils.setField(embeddedClinicalDocumentExtractor, "documentXmlConverter", documentXmlConverter);
+        ReflectionTestUtils.setField(embeddedClinicalDocumentExtractor, "documentAccessor", documentAccessor);
         valueSetService = new ValueSetServiceImplMock(fileReader);
         sut = new DocumentCleanupForNoEntryAndNoSection(documentAccessor);
     }

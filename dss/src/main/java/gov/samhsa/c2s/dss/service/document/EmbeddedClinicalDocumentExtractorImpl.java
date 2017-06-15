@@ -27,16 +27,9 @@ package gov.samhsa.c2s.dss.service.document;
 
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessor;
 import gov.samhsa.c2s.common.document.converter.DocumentXmlConverter;
-import gov.samhsa.c2s.common.document.converter.DocumentXmlConverterException;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathExpressionException;
 
 /**
  * The Class EmbeddedClinicalDocumentExtractorImpl.
@@ -62,53 +55,19 @@ public class EmbeddedClinicalDocumentExtractorImpl implements
     @Autowired
     private DocumentAccessor documentAccessor;
 
-    public EmbeddedClinicalDocumentExtractorImpl() {
-    }
-
-    /**
-     * Instantiates a new embedded clinical document extractor impl.
-     *
-     * @param documentXmlConverter the document xml converter
-     * @param documentAccessor     the document accessor
-     */
-    @Autowired
-    public EmbeddedClinicalDocumentExtractorImpl(
-            DocumentXmlConverter documentXmlConverter,
-            DocumentAccessor documentAccessor) {
-        super();
-        this.documentXmlConverter = documentXmlConverter;
-        this.documentAccessor = documentAccessor;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * EmbeddedClinicalDocumentExtractor
-     * #extractClinicalDocumentFromFactModel(java.lang.String)
-     */
     @Override
     public String extractClinicalDocumentFromFactModel(String factModel)
             throws DocumentSegmentationException {
-        Document newXmlDocument;
-        try {
-            final Document factModelDocument = documentXmlConverter
-                    .loadDocument(factModel);
-            final Node clinicalDocumentNode = documentAccessor.getNode(
-                    factModelDocument, XPATH_CLINICALDOCUMENT).get();
+        return extractEmbeddedElement(factModel, XPATH_CLINICALDOCUMENT);
+    }
 
-            // Create new document
-            newXmlDocument = DocumentBuilderFactory.newInstance()
-                    .newDocumentBuilder().newDocument();
-            // Import ClinicalDocument node to the new document
-            final Node copyNode = newXmlDocument.importNode(
-                    clinicalDocumentNode, true);
-            // Add ClinicalDocument node as the root node to the document
-            newXmlDocument.appendChild(copyNode);
-        } catch (XPathExpressionException | ParserConfigurationException
-                | DocumentXmlConverterException e) {
-            throw new DocumentSegmentationException(e);
-        }
-        return documentXmlConverter.convertXmlDocToString(newXmlDocument);
+    @Override
+    public DocumentXmlConverter getDocumentXmlConverter() {
+        return this.documentXmlConverter;
+    }
+
+    @Override
+    public DocumentAccessor getDocumentAccessor() {
+        return this.documentAccessor;
     }
 }

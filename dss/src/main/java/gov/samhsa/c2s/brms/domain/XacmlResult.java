@@ -25,6 +25,8 @@
  ******************************************************************************/
 package gov.samhsa.c2s.brms.domain;
 
+import lombok.Data;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -37,6 +39,7 @@ import java.util.List;
  */
 @XmlRootElement(name = "xacmlResult")
 @XmlAccessorType(XmlAccessType.FIELD)
+@Data
 public class XacmlResult {
 
     /**

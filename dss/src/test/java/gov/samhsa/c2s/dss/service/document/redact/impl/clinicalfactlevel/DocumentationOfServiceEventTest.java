@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -58,7 +59,9 @@ public class DocumentationOfServiceEventTest {
         marshaller = new SimpleMarshallerImpl();
         documentAccessor = new DocumentAccessorImpl();
         documentXmlConverter = new DocumentXmlConverterImpl();
-        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl(documentXmlConverter, documentAccessor);
+        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl();
+        ReflectionTestUtils.setField(embeddedClinicalDocumentExtractor, "documentXmlConverter", documentXmlConverter);
+        ReflectionTestUtils.setField(embeddedClinicalDocumentExtractor, "documentAccessor", documentAccessor);
         valueSetService = new ValueSetServiceImplMock(fileReader);
         sut = new DocumentationOfServiceEvent(documentAccessor);
     }

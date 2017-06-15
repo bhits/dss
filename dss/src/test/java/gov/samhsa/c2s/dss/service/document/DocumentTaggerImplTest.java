@@ -93,8 +93,9 @@ public class DocumentTaggerImplTest {
         documentFactModelExtractor = new DocumentFactModelExtractorImpl(
                 xmlTransformer);
         documentXmlConverter = new DocumentXmlConverterImpl();
-        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl(
-                documentXmlConverter, documentAccessor);
+        embeddedClinicalDocumentExtractor = new EmbeddedClinicalDocumentExtractorImpl();
+        ReflectionTestUtils.setField(embeddedClinicalDocumentExtractor, "documentXmlConverter", documentXmlConverter);
+        ReflectionTestUtils.setField(embeddedClinicalDocumentExtractor, "documentAccessor", documentAccessor);
         guvnorServiceMock = mock(GuvnorServiceImpl.class);
         final String ruleSource = fileReader
                 .readFile("testAnnotationRules.txt");

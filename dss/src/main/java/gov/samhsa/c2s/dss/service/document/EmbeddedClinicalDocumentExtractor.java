@@ -25,12 +25,13 @@
  ******************************************************************************/
 package gov.samhsa.c2s.dss.service.document;
 
+import gov.samhsa.c2s.dss.service.EmbeddedElementExtractor;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
 
 /**
  * The Interface EmbeddedClinicalDocumentExtractor.
  */
-public interface EmbeddedClinicalDocumentExtractor {
+public interface EmbeddedClinicalDocumentExtractor extends EmbeddedElementExtractor {
 
     /**
      * Extract clinical document from fact model.

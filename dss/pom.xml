@@ -66,6 +66,9 @@
         <!-- BRMS Libraries' version -->
         <drools.version>5.4.0.Final</drools.version>
         <docker.maven.version>0.4.3</docker.maven.version>
+        <!-- HAPI FHIR version -->
+        <hapi.fhir.version>2.2</hapi.fhir.version>
+        <ph-schematron.version>2.7.1</ph-schematron.version>
     </properties>
 
     <repositories>
@@ -115,6 +118,11 @@
                 <dependency>
                     <groupId>org.springframework.retry</groupId>
                     <artifactId>spring-retry</artifactId>
+                </dependency>
+                <!-- Jackson Object Mapper JDK8 Support -->
+                <dependency>
+                    <groupId>com.fasterxml.jackson.datatype</groupId>
+                    <artifactId>jackson-datatype-jdk8</artifactId>
                 </dependency>
                 <!-- C2S Common Libraries -->
                 <dependency>
@@ -218,6 +226,28 @@
                     <groupId>org.projectlombok</groupId>
                     <artifactId>lombok</artifactId>
                     <version>${lombok.version}</version>
+                </dependency>
+
+                <!-- HAPI FHIR -->
+                <dependency>
+                    <groupId>ca.uhn.hapi.fhir</groupId>
+                    <artifactId>hapi-fhir-base</artifactId>
+                    <version>${hapi.fhir.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>ca.uhn.hapi.fhir</groupId>
+                    <artifactId>hapi-fhir-validation-resources-dstu3</artifactId>
+                    <version>${hapi.fhir.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>ca.uhn.hapi.fhir</groupId>
+                    <artifactId>hapi-fhir-structures-dstu3</artifactId>
+                    <version>${hapi.fhir.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.phloc</groupId>
+                    <artifactId>phloc-schematron</artifactId>
+                    <version>${ph-schematron.version}</version>
                 </dependency>
 
                 <!-- Test -->

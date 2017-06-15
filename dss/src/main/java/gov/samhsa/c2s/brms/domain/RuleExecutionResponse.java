@@ -25,11 +25,14 @@
  ******************************************************************************/
 package gov.samhsa.c2s.brms.domain;
 
+import lombok.Data;
+
 import javax.xml.bind.annotation.XmlTransient;
 
 /**
  * The Class RuleExecutionResponse.
  */
+@Data
 public class RuleExecutionResponse {
 
     /**
@@ -55,7 +58,7 @@ public class RuleExecutionResponse {
     /**
      * The Item action.
      */
-    private String ItemAction;
+    private String ItemAction = ITEM_ACTION_NO_ACTION;
 
     /**
      * The US privacy law.
@@ -119,22 +122,6 @@ public class RuleExecutionResponse {
     private String entry;
 
     /**
-     * Instantiates a new rule execution response.
-     */
-    public RuleExecutionResponse() {
-        ItemAction = ITEM_ACTION_NO_ACTION;
-    }
-
-    /**
-     * Gets the clinical fact.
-     *
-     * @return the clinical fact
-     */
-    public ClinicalFact getClinicalFact() {
-        return clinicalFact;
-    }
-
-    /**
      * Sets the clinical fact.
      *
      * @param clinicalFact the new clinical fact
@@ -146,258 +133,5 @@ public class RuleExecutionResponse {
         this.displayName = clinicalFact.getDisplayName();
         this.observationId = clinicalFact.getObservationId();
         this.entry = clinicalFact.getEntry();
-    }
-
-    /**
-     * Gets the implied conf section.
-     *
-     * @return the ImpliedConfSection
-     */
-    public Confidentiality getImpliedConfSection() {
-        return ImpliedConfSection;
-    }
-
-    /**
-     * Sets the implied conf section.
-     *
-     * @param ImpliedConfSection the ImpliedConfSection to set
-     */
-    public void setImpliedConfSection(Confidentiality ImpliedConfSection) {
-        this.ImpliedConfSection = ImpliedConfSection;
-    }
-
-    /**
-     * Gets the uS privacy law.
-     *
-     * @return the uS privacy law
-     */
-    public UsPrivacyLaw getUSPrivacyLaw() {
-        return USPrivacyLaw;
-    }
-
-    /**
-     * Sets the uS privacy law.
-     *
-     * @param uSPrivacyLaw the new uS privacy law
-     */
-    public void setUSPrivacyLaw(UsPrivacyLaw uSPrivacyLaw) {
-        USPrivacyLaw = uSPrivacyLaw;
-    }
-
-    /**
-     * Gets the document obligation policy.
-     *
-     * @return the document obligation policy
-     */
-    public ObligationPolicyDocument getDocumentObligationPolicy() {
-        return DocumentObligationPolicy;
-    }
-
-    /**
-     * Sets the document obligation policy.
-     *
-     * @param documentObligationPolicy the new document obligation policy
-     */
-    public void setDocumentObligationPolicy(
-            ObligationPolicyDocument documentObligationPolicy) {
-        DocumentObligationPolicy = documentObligationPolicy;
-    }
-
-    /**
-     * Gets the document refrain policy.
-     *
-     * @return the document refrain policy
-     */
-    public RefrainPolicy getDocumentRefrainPolicy() {
-        return DocumentRefrainPolicy;
-    }
-
-    /**
-     * Sets the document refrain policy.
-     *
-     * @param documentRefrainPolicy the new document refrain policy
-     */
-    public void setDocumentRefrainPolicy(RefrainPolicy documentRefrainPolicy) {
-        DocumentRefrainPolicy = documentRefrainPolicy;
-    }
-
-    /**
-     * Gets the sensitivity.
-     *
-     * @return the sensitivity
-     */
-    public gov.samhsa.c2s.brms.domain.Sensitivity getSensitivity() {
-        return Sensitivity;
-    }
-
-    /**
-     * Sets the sensitivity.
-     *
-     * @param sensitivity the new sensitivity
-     */
-    public void setSensitivity(gov.samhsa.c2s.brms.domain.Sensitivity sensitivity) {
-        Sensitivity = sensitivity;
-    }
-
-    /**
-     * Gets the item action.
-     *
-     * @return the ItemAction
-     */
-    public String getItemAction() {
-        return ItemAction;
-    }
-
-    /**
-     * Sets the item action.
-     *
-     * @param ItemAction the ItemAction to set
-     */
-    public void setItemAction(String ItemAction) {
-        this.ItemAction = ItemAction;
-    }
-
-    /**
-     * Gets the code.
-     *
-     * @return the code
-     */
-    public String getCode() {
-        return code;
-    }
-
-    /**
-     * Sets the code.
-     *
-     * @param code the new code
-     */
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    /**
-     * Gets the code system.
-     *
-     * @return the code system
-     */
-    public String getCodeSystem() {
-        return codeSystem;
-    }
-
-    /**
-     * Sets the code system.
-     *
-     * @param codeSystem the new code system
-     */
-    public void setCodeSystem(String codeSystem) {
-        this.codeSystem = codeSystem;
-    }
-
-    /**
-     * Gets the code system name.
-     *
-     * @return the code system name
-     */
-    public String getCodeSystemName() {
-        return codeSystemName;
-    }
-
-    /**
-     * Sets the code system name.
-     *
-     * @param codeSystemName the new code system name
-     */
-    public void setCodeSystemName(String codeSystemName) {
-        this.codeSystemName = codeSystemName;
-    }
-
-    /**
-     * Gets the display name.
-     *
-     * @return the display name
-     */
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    /**
-     * Sets the display name.
-     *
-     * @param displayName the new display name
-     */
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    /**
-     * Gets the c32 section title.
-     *
-     * @return the c32 section title
-     */
-    public String getC32SectionTitle() {
-        return c32SectionTitle;
-    }
-
-    /**
-     * Sets the c32 section title.
-     *
-     * @param c32SectionTitle the new c32 section title
-     */
-    public void setC32SectionTitle(String c32SectionTitle) {
-        this.c32SectionTitle = c32SectionTitle;
-    }
-
-    /**
-     * Gets the c32 section loinc code.
-     *
-     * @return the c32 section loinc code
-     */
-    public String getC32SectionLoincCode() {
-        return c32SectionLoincCode;
-    }
-
-    /**
-     * Sets the c32 section loinc code.
-     *
-     * @param c32SectionLoincCode the new c32 section loinc code
-     */
-    public void setC32SectionLoincCode(String c32SectionLoincCode) {
-        this.c32SectionLoincCode = c32SectionLoincCode;
-    }
-
-    /**
-     * Gets the observation id.
-     *
-     * @return the observation id
-     */
-    public String getObservationId() {
-        return observationId;
-    }
-
-    /**
-     * Sets the observation id.
-     *
-     * @param observationId the new observation id
-     */
-    public void setObservationId(String observationId) {
-        this.observationId = observationId;
-    }
-
-    /**
-     * Gets the entry.
-     *
-     * @return the entry
-     */
-    public String getEntry() {
-        return entry;
-    }
-
-    /**
-     * Sets the entry.
-     *
-     * @param entry the new entry
-     */
-    public void setEntry(String entry) {
-        this.entry = entry;
     }
 }

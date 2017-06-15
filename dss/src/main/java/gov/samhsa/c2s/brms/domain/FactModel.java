@@ -25,8 +25,13 @@
  ******************************************************************************/
 package gov.samhsa.c2s.brms.domain;
 
-import javax.xml.bind.annotation.*;
-import java.util.ArrayList;
+import lombok.Data;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -35,6 +40,7 @@ import java.util.List;
  */
 @XmlRootElement(name = "FactModel")
 @XmlAccessorType(XmlAccessType.FIELD)
+@Data
 public class FactModel {
 
     /**
@@ -47,66 +53,12 @@ public class FactModel {
      */
     @XmlElementWrapper(name = "ClinicalFacts")
     @XmlElement(name = "ClinicalFact")
-    private List<ClinicalFact> clinicalFactList = new ArrayList<ClinicalFact>();
+    private List<ClinicalFact> clinicalFactList = new LinkedList<>();
 
     /**
      * The entry references.
      */
     @XmlElementWrapper(name = "EntryReferences")
     @XmlElement(name = "EntryReference")
-    private List<EntryReference> entryReferences = new LinkedList<EntryReference>();
-
-    /**
-     * Gets the XACML result.
-     *
-     * @return the XACML result
-     */
-    public XacmlResult getXacmlResult() {
-        return xacmlResult;
-    }
-
-    /**
-     * Sets the XACML result.
-     *
-     * @param xacmlResult the new XACML result
-     */
-    public void setXacmlResult(XacmlResult xacmlResult) {
-        this.xacmlResult = xacmlResult;
-    }
-
-    /**
-     * Gets the clinical fact list.
-     *
-     * @return the clinical fact list
-     */
-    public List<ClinicalFact> getClinicalFactList() {
-        return clinicalFactList;
-    }
-
-    /**
-     * Sets the clinical fact list.
-     *
-     * @param clinicalFacts the new clinical fact list
-     */
-    public void setClinicalFactList(List<ClinicalFact> clinicalFacts) {
-        this.clinicalFactList = clinicalFacts;
-    }
-
-    /**
-     * Gets the entry references.
-     *
-     * @return the entry references
-     */
-    public List<EntryReference> getEntryReferences() {
-        return entryReferences;
-    }
-
-    /**
-     * Sets the entry references.
-     *
-     * @param entryReferences the new entry references
-     */
-    public void setEntryReferences(List<EntryReference> entryReferences) {
-        this.entryReferences = entryReferences;
-    }
+    private List<EntryReference> entryReferences = new LinkedList<>();
 }

@@ -1,7 +1,16 @@
 package gov.samhsa.c2s.dss.service;
 
 import ch.qos.logback.audit.AuditException;
-import gov.samhsa.c2s.brms.domain.*;
+import gov.samhsa.c2s.brms.domain.Confidentiality;
+import gov.samhsa.c2s.brms.domain.FactModel;
+import gov.samhsa.c2s.brms.domain.ObligationPolicyDocument;
+import gov.samhsa.c2s.brms.domain.RefrainPolicy;
+import gov.samhsa.c2s.brms.domain.RuleExecutionContainer;
+import gov.samhsa.c2s.brms.domain.RuleExecutionResponse;
+import gov.samhsa.c2s.brms.domain.Sensitivity;
+import gov.samhsa.c2s.brms.domain.SubjectPurposeOfUse;
+import gov.samhsa.c2s.brms.domain.UsPrivacyLaw;
+import gov.samhsa.c2s.brms.domain.XacmlResult;
 import gov.samhsa.c2s.brms.service.RuleExecutionService;
 import gov.samhsa.c2s.brms.service.dto.AssertAndExecuteClinicalFactsResponse;
 import gov.samhsa.c2s.common.audit.AuditClientImpl;
@@ -18,7 +27,12 @@ import gov.samhsa.c2s.common.validation.XmlValidationResult;
 import gov.samhsa.c2s.common.validation.exception.InvalidXmlDocumentException;
 import gov.samhsa.c2s.common.validation.exception.XmlDocumentReadFailureException;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetServiceImplMock;
-import gov.samhsa.c2s.dss.service.document.*;
+import gov.samhsa.c2s.dss.service.document.DocumentEditorImpl;
+import gov.samhsa.c2s.dss.service.document.DocumentFactModelExtractorImpl;
+import gov.samhsa.c2s.dss.service.document.DocumentRedactor;
+import gov.samhsa.c2s.dss.service.document.DocumentRedactorImpl;
+import gov.samhsa.c2s.dss.service.document.DocumentTaggerImpl;
+import gov.samhsa.c2s.dss.service.document.EmbeddedClinicalDocumentExtractorImpl;
 import gov.samhsa.c2s.dss.service.document.dto.RedactedDocument;
 import gov.samhsa.c2s.dss.service.dto.DSSRequest;
 import gov.samhsa.c2s.dss.service.dto.DSSResponse;
@@ -55,7 +69,11 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DocumentSegmentationImplTest {
     private static final String PURPOSE_OF_USE = "TREATMENT";
@@ -80,7 +98,6 @@ public class DocumentSegmentationImplTest {
     private static DocumentTaggerImpl documentTaggerMock;
     private static EmbeddedClinicalDocumentExtractorImpl embeddedClinicalDocumentExtractorMock;
     private static AdditionalMetadataGeneratorForSegmentedClinicalDocumentImpl additionalMetadataGeneratorForSegmentedClinicalDocumentImplMock;
-    private static XmlValidation xmlValidatorMock;
     private static RedactedDocument redactedDocumentMock;
     private static String testOriginal_C32_xml;
     private static String testFactModel_xml;
@@ -91,6 +108,55 @@ public class DocumentSegmentationImplTest {
     private static String testEncrypted_C32_xml;
     private static String testAdditionalMetadata_xml;
     private static DocumentSegmentation documentSegmentation;
+
+    private static RuleExecutionContainer setRuleExecutionContainer() {
+        final RuleExecutionContainer container = new RuleExecutionContainer();
+        final RuleExecutionResponse r1 = new RuleExecutionResponse();
+        r1.setC32SectionLoincCode("11450-4");
+        r1.setC32SectionTitle("Problems");
+        r1.setCode("66214007");
+        r1.setCodeSystemName("SNOMED CT");
+        r1.setDisplayName("Substance Abuse Disorder");
+        r1.setDocumentObligationPolicy(ObligationPolicyDocument.ENCRYPT);
+        r1.setDocumentRefrainPolicy(RefrainPolicy.NODSCLCD);
+        r1.setImpliedConfSection(Confidentiality.R);
+        r1.setItemAction("REDACT");
+        r1.setObservationId("e11275e7-67ae-11db-bd13-0800200c9a66b827vs52h7");
+        r1.setSensitivity(Sensitivity.ETH);
+        r1.setUSPrivacyLaw(UsPrivacyLaw._42CFRPart2);
+        final RuleExecutionResponse r2 = new RuleExecutionResponse();
+        r2.setC32SectionLoincCode("11450-4");
+        r2.setC32SectionTitle("Problems");
+        r2.setCode("111880001");
+        r2.setCodeSystemName("SNOMED CT");
+        r2.setDisplayName("Acute HIV");
+        r2.setDocumentObligationPolicy(ObligationPolicyDocument.ENCRYPT);
+        r2.setDocumentRefrainPolicy(RefrainPolicy.NODSCLCD);
+        r2.setImpliedConfSection(Confidentiality.R);
+        r2.setItemAction("MASK");
+        r2.setObservationId("d11275e7-67ae-11db-bd13-0800200c9a66");
+        r2.setSensitivity(Sensitivity.HIV);
+        r2.setUSPrivacyLaw(UsPrivacyLaw._42CFRPart2);
+        final List<RuleExecutionResponse> list = new LinkedList<RuleExecutionResponse>();
+        list.add(r1);
+        list.add(r2);
+        container.setExecutionResponseList(list);
+        return container;
+    }
+
+    private static XacmlResult setXacmlResult() {
+        final XacmlResult xacmlResultObject = new XacmlResult();
+        xacmlResultObject.setPdpDecision("PERMIT");
+        xacmlResultObject
+                .setSubjectPurposeOfUse(SubjectPurposeOfUse.HEALTHCARE_TREATMENT);
+        xacmlResultObject.setMessageId("cf8cace6-6331-4a45-8e79-5bf503925be4");
+        xacmlResultObject.setHomeCommunityId("2.16.840.1.113883.3.467");
+        final String[] o = {"51848-0", "121181", "47420-5", "46240-8", "ETH",
+                "GDIS", "PSY", "SEX", "18748-4", "11504-8", "34117-2"};
+        final List<String> obligations = Arrays.asList(o);
+        xacmlResultObject.setPdpObligations(obligations);
+        return xacmlResultObject;
+    }
 
     @Before
     public void setUp() throws
@@ -230,21 +296,8 @@ public class DocumentSegmentationImplTest {
                         .extractClinicalDocumentFromFactModel(testFactModel_xml))
                 .thenReturn(testOriginal_C32_xml);
 
-        xmlValidatorMock = mock(XmlValidation.class);
-        when(xmlValidatorMock.validate(testOriginal_C32_xml)).thenReturn(true);
-        when(xmlValidatorMock.validate(testTagged_C32_xml)).thenReturn(true);
-        when(xmlValidatorMock.validate(testMasked_C32_xml)).thenReturn(true);
-        when(xmlValidatorMock.validate(testEncrypted_C32_xml)).thenReturn(true);
         final XmlValidationResult xmlValidationResultMock = mock(XmlValidationResult.class);
         when(xmlValidationResultMock.isValid()).thenReturn(true);
-        when(xmlValidatorMock.validateWithAllErrors(testOriginal_C32_xml))
-                .thenReturn(xmlValidationResultMock);
-        when(xmlValidatorMock.validateWithAllErrors(testTagged_C32_xml))
-                .thenReturn(xmlValidationResultMock);
-        when(xmlValidatorMock.validateWithAllErrors(testMasked_C32_xml))
-                .thenReturn(xmlValidationResultMock);
-        when(xmlValidatorMock.validateWithAllErrors(testEncrypted_C32_xml))
-                .thenReturn(xmlValidationResultMock);
 
         documentSegmentation = new DocumentSegmentationImpl(
                 ruleExecutionServiceClientMock,
@@ -368,8 +421,6 @@ public class DocumentSegmentationImplTest {
         final boolean auditFailureByPass = true;
         final XmlValidationResult xmlValidationResultTrue = mock(XmlValidationResult.class);
         when(xmlValidationResultTrue.isValid()).thenReturn(true);
-        when(xmlValidatorMock.validateWithAllErrors("")).thenReturn(
-                xmlValidationResultTrue);
         final DocumentEditorImpl realDocumentEditorImpl = new DocumentEditorImpl(
                 new MetadataGeneratorImpl(new XmlTransformerImpl(
                         new SimpleMarshallerImpl())), new FileReaderImpl(),
@@ -382,17 +433,13 @@ public class DocumentSegmentationImplTest {
                 embeddedClinicalDocumentExtractorMock,
                 new ValueSetServiceImplMock(fileReader),
                 additionalMetadataGeneratorForSegmentedClinicalDocumentImplMock);
-        ReflectionTestUtils.setField(
-                documentSegmentationWithRealDocumentEditor, "xmlValidator",
-                xmlValidatorMock);
         DSSRequest dssRequest = new DSSRequest();
         dssRequest.setDocument("".getBytes(StandardCharsets.UTF_8));
         dssRequest.setAudited(audited);
         dssRequest.setAuditFailureByPass(auditFailureByPass);
 
         // Act
-        @SuppressWarnings("unused")
-        final DSSResponse resp = documentSegmentationWithRealDocumentEditor
+        @SuppressWarnings("unused") final DSSResponse resp = documentSegmentationWithRealDocumentEditor
                 .segmentDocument(dssRequest);
 
         // Assert
@@ -410,8 +457,6 @@ public class DocumentSegmentationImplTest {
         final boolean auditFailureByPass = true;
         final XmlValidationResult xmlValidationResultMock = mock(XmlValidationResult.class);
         when(xmlValidationResultMock.isValid()).thenReturn(true);
-        when(xmlValidatorMock.validateWithAllErrors("")).thenReturn(
-                xmlValidationResultMock);
         final DocumentSegmentationImpl documentSegmentationWithRealMarshaller = new DocumentSegmentationImpl(
                 ruleExecutionServiceClientMock,
                 documentEditorMock, new SimpleMarshallerImpl(),
@@ -420,16 +465,13 @@ public class DocumentSegmentationImplTest {
                 embeddedClinicalDocumentExtractorMock,
                 new ValueSetServiceImplMock(fileReader),
                 additionalMetadataGeneratorForSegmentedClinicalDocumentImplMock);
-        ReflectionTestUtils.setField(documentSegmentationWithRealMarshaller,
-                "xmlValidator", xmlValidatorMock);
         DSSRequest dssRequest = new DSSRequest();
         dssRequest.setDocument("".getBytes(StandardCharsets.UTF_8));
         dssRequest.setAudited(audited);
         dssRequest.setAuditFailureByPass(auditFailureByPass);
 
         // Act
-        @SuppressWarnings("unused")
-        final DSSResponse resp = documentSegmentationWithRealMarshaller
+        @SuppressWarnings("unused") final DSSResponse resp = documentSegmentationWithRealMarshaller
                 .segmentDocument(dssRequest);
 
         // Assert
@@ -457,8 +499,6 @@ public class DocumentSegmentationImplTest {
                 embeddedClinicalDocumentExtractorMock,
                 new ValueSetServiceImplMock(fileReader),
                 additionalMetadataGeneratorForSegmentedClinicalDocumentImplMock);
-        ReflectionTestUtils.setField(documentSegmentationWithRealMarshaller,
-                "xmlValidator", validationMock);
         ReflectionTestUtils.setField(documentSegmentationWithRealMarshaller,
                 "clinicalDocumentValidation", clinicalDocumentValidationMock);
         final String notxml = "<notxml";
@@ -507,54 +547,5 @@ public class DocumentSegmentationImplTest {
             output.write(data);
         }
         return output;
-    }
-
-    private static RuleExecutionContainer setRuleExecutionContainer() {
-        final RuleExecutionContainer container = new RuleExecutionContainer();
-        final RuleExecutionResponse r1 = new RuleExecutionResponse();
-        r1.setC32SectionLoincCode("11450-4");
-        r1.setC32SectionTitle("Problems");
-        r1.setCode("66214007");
-        r1.setCodeSystemName("SNOMED CT");
-        r1.setDisplayName("Substance Abuse Disorder");
-        r1.setDocumentObligationPolicy(ObligationPolicyDocument.ENCRYPT);
-        r1.setDocumentRefrainPolicy(RefrainPolicy.NODSCLCD);
-        r1.setImpliedConfSection(Confidentiality.R);
-        r1.setItemAction("REDACT");
-        r1.setObservationId("e11275e7-67ae-11db-bd13-0800200c9a66b827vs52h7");
-        r1.setSensitivity(Sensitivity.ETH);
-        r1.setUSPrivacyLaw(UsPrivacyLaw._42CFRPart2);
-        final RuleExecutionResponse r2 = new RuleExecutionResponse();
-        r2.setC32SectionLoincCode("11450-4");
-        r2.setC32SectionTitle("Problems");
-        r2.setCode("111880001");
-        r2.setCodeSystemName("SNOMED CT");
-        r2.setDisplayName("Acute HIV");
-        r2.setDocumentObligationPolicy(ObligationPolicyDocument.ENCRYPT);
-        r2.setDocumentRefrainPolicy(RefrainPolicy.NODSCLCD);
-        r2.setImpliedConfSection(Confidentiality.R);
-        r2.setItemAction("MASK");
-        r2.setObservationId("d11275e7-67ae-11db-bd13-0800200c9a66");
-        r2.setSensitivity(Sensitivity.HIV);
-        r2.setUSPrivacyLaw(UsPrivacyLaw._42CFRPart2);
-        final List<RuleExecutionResponse> list = new LinkedList<RuleExecutionResponse>();
-        list.add(r1);
-        list.add(r2);
-        container.setExecutionResponseList(list);
-        return container;
-    }
-
-    private static XacmlResult setXacmlResult() {
-        final XacmlResult xacmlResultObject = new XacmlResult();
-        xacmlResultObject.setPdpDecision("PERMIT");
-        xacmlResultObject
-                .setSubjectPurposeOfUse(SubjectPurposeOfUse.HEALTHCARE_TREATMENT);
-        xacmlResultObject.setMessageId("cf8cace6-6331-4a45-8e79-5bf503925be4");
-        xacmlResultObject.setHomeCommunityId("2.16.840.1.113883.3.467");
-        final String[] o = {"51848-0", "121181", "47420-5", "46240-8", "ETH",
-                "GDIS", "PSY", "SEX", "18748-4", "11504-8", "34117-2"};
-        final List<String> obligations = Arrays.asList(o);
-        xacmlResultObject.setPdpObligations(obligations);
-        return xacmlResultObject;
     }
 }

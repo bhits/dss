@@ -5,12 +5,10 @@ import gov.samhsa.c2s.brms.domain.FactModel;
 import gov.samhsa.c2s.brms.domain.RuleExecutionContainer;
 import gov.samhsa.c2s.brms.domain.XacmlResult;
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessor;
-import gov.samhsa.c2s.common.document.accessor.DocumentAccessorException;
 import gov.samhsa.c2s.common.document.converter.DocumentXmlConverter;
 import gov.samhsa.c2s.common.log.Logger;
 import gov.samhsa.c2s.common.log.LoggerFactory;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
-
 import gov.samhsa.c2s.dss.config.RedactionHandlerIdentityConfig;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryResponseDto;
@@ -23,23 +21,16 @@ import gov.samhsa.c2s.dss.service.document.redact.base.AbstractPostRedactionLeve
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractRedactionHandler;
 import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
-
 import gov.samhsa.c2s.dss.service.exception.VssServiceUnreachableException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import javax.annotation.PostConstruct;
-import javax.xml.xpath.XPathExpressionException;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 public class DocumentRedactorImpl implements DocumentRedactor {
@@ -157,69 +148,27 @@ public class DocumentRedactorImpl implements DocumentRedactor {
         logger.info(() -> "postRedactionLevelRedactionHandlers: " + postRedactionLevelRedactionHandlers.toString());
     }
 
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see DocumentRedactor#
-     * cleanUpEmbeddedClinicalDocumentFromFactModel(java.lang.String)
-     */
     @Override
     public String cleanUpEmbeddedClinicalDocumentFromFactModel(
             String factModelXml) {
-        try {
-            final Document factModel = documentXmlConverter
-                    .loadDocument(factModelXml);
-            final Element embeddedClinicalDocument = documentAccessor
-                    .getElement(factModel, "//hl7:EmbeddedClinicalDocument")
-                    .get();
-
-            embeddedClinicalDocument.getParentNode().removeChild(
-                    embeddedClinicalDocument);
-            return documentXmlConverter.convertXmlDocToString(factModel);
-        } catch (final DocumentAccessorException e) {
-            logger.error(e.getMessage(), e);
-            throw new DocumentSegmentationException(e);
-        }
+        final String xPathExprEmbeddedClinicalDocument = "//hl7:EmbeddedClinicalDocument";
+        return cleanUpElements(factModelXml, xPathExprEmbeddedClinicalDocument);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see DocumentRedactor#
-     * cleanUpGeneratedEntryIds(java.lang.String)
-     */
     @Override
     public String cleanUpGeneratedEntryIds(String document) {
-        // Remove all generatedEntryId elements to clean up the clinical
-        // document
+        // Remove all generatedEntryId elements to clean up the clinical document
         final String xPathExprGeneratedEntryId = "//hl7:generatedEntryId";
         return cleanUpElements(document, xPathExprGeneratedEntryId);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see DocumentRedactor#
-     * cleanUpGeneratedServiceEventIds(java.lang.String)
-     */
     @Override
     public String cleanUpGeneratedServiceEventIds(String document) {
-        // Remove all generatedServiceEventId elements to clean up the clinical
-        // document
+        // Remove all generatedServiceEventId elements to clean up the clinical document
         final String xPathExprGeneratedEntryId = "//hl7:generatedServiceEventId";
         return cleanUpElements(document, xPathExprGeneratedEntryId);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * DocumentRedactor#redactDocument
-     * (java.lang.String, RuleExecutionContainer,
-     * XacmlResult,
-     * FactModel)
-     */
     @Override
     public RedactedDocument redactDocument(String document, RuleExecutionContainer ruleExecutionContainer, FactModel factModel) {
         String tryPolicyDocument = null;
@@ -246,7 +195,7 @@ public class DocumentRedactorImpl implements DocumentRedactor {
         pdpObligationsComplementSet.addAll(allValueSetCategoryDtosSet.stream()
                 .map(ValueSetCategoryResponseDto::getCode)
                 .filter(valSetCatCode -> !xacmlPdpObligations.contains(valSetCatCode))
-                .collect(Collectors.toList()));
+                .collect(toList()));
 
         PdpObligationsComplementSetDto pdpObligationsComplementSetDto = new PdpObligationsComplementSetDto(pdpObligationsComplementSet);
 
@@ -305,68 +254,17 @@ public class DocumentRedactorImpl implements DocumentRedactor {
                 combinedResults.getRedactSectionSet(), combinedResults.getRedactCategorySet());
     }
 
-    /**
-     * Clean up elements.
-     *
-     * @param document  the document
-     * @param xPathExpr the x path expr
-     * @return the string
-     */
-    private String cleanUpElements(String document, String xPathExpr) {
-        Document xmlDocument = null;
-        try {
-            xmlDocument = documentXmlConverter.loadDocument(document);
+    @Override
+    public DocumentXmlConverter getDocumentXmlConverter() {
+        return this.documentXmlConverter;
+    }
 
-            NodeList nodes = null;
-
-            nodes = documentAccessor.getNodeList(xmlDocument, xPathExpr);
-
-            if (nodes != null) {
-                for (int i = 0; i < nodes.getLength(); i++) {
-                    final Node node = nodes.item(i);
-                    final Element element = (Element) node;
-                    element.getParentNode().removeChild(element);
-                }
-            }
-            document = documentXmlConverter.convertXmlDocToString(xmlDocument);
-        } catch (final XPathExpressionException e) {
-            logger.error(e.getMessage(), e);
-            throw new DocumentSegmentationException(e.toString(), e);
-        } catch (final Exception e) {
-            logger.error(e.getMessage(), e);
-            throw new DocumentSegmentationException(e.toString(), e);
-        }
-        return document;
+    @Override
+    public DocumentAccessor getDocumentAccessor() {
+        return this.documentAccessor;
     }
 
     private boolean isNotIdentity(String name) {
         return !RedactionHandlerIdentityConfig.IDENTITY.equals(name);
-    }
-
-    /**
-     * Redact node if not null.
-     *
-     * @param nodeToBeRedacted the node to be redacted
-     */
-    private void redactNodeIfNotNull(Node nodeToBeRedacted) {
-        if (nodeToBeRedacted != null) {
-            // If displayName contains the code, it will be found twice and can
-            // already be removed. Therefore, we need to check the parent
-            try {
-                nodeToBeRedacted.getParentNode().removeChild(nodeToBeRedacted);
-            } catch (final NullPointerException e) {
-                logger.info(() -> new StringBuilder()
-                        .append("The node value '")
-                        .append(nodeToBeRedacted.getNodeValue())
-                        .append("' must have been removed already, it cannot be removed again. This might happen if one of the search text contains the other and multiple criterias match to mark the node to be redacted.")
-                        .toString());
-            }
-        }
-    }
-
-    private void redactNodesIfNotNull(List<Node> nodesToBeRedacted) {
-        Optional.ofNullable(nodesToBeRedacted)
-                .filter(Objects::nonNull)
-                .ifPresent(list -> list.forEach(this::redactNodeIfNotNull));
     }
 }

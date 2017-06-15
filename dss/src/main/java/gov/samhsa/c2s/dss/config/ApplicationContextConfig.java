@@ -13,9 +13,13 @@ import gov.samhsa.c2s.common.filereader.FileReader;
 import gov.samhsa.c2s.common.filereader.FileReaderImpl;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerImpl;
+import gov.samhsa.c2s.common.namespace.DefaultNamespaceContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 
@@ -44,9 +48,13 @@ public class ApplicationContextConfig {
     }
 
     @Bean
-    public DocumentAccessor documentAccessor() {
-        return new DocumentAccessorImpl();
+    public DocumentAccessor documentAccessor(FhirIncludedNamespaceContext fhirIncludedNamespaceContext) {
+        final DocumentAccessorImpl documentAccessor = new DocumentAccessorImpl();
+        documentAccessor.setNamespaceContext(fhirIncludedNamespaceContext);
+        return documentAccessor;
     }
+
+
 
     @Bean
     public XmlTransformer xmlTransformer() {
@@ -56,5 +64,13 @@ public class ApplicationContextConfig {
     @Bean
     public RestOperations restTemplate() {
         return new RestTemplate();
+    }
+
+    @Component
+    static class FhirIncludedNamespaceContext extends DefaultNamespaceContext {
+        @Override
+        public String getNamespaceURI(String prefix) {
+            return prefix.equals("fhir") ? "http://hl7.org/fhir" : super.getNamespaceURI(prefix);
+        }
     }
 }

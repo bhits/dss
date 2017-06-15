@@ -27,12 +27,13 @@ package gov.samhsa.c2s.dss.service.document;
 
 import gov.samhsa.c2s.brms.domain.FactModel;
 import gov.samhsa.c2s.brms.domain.RuleExecutionContainer;
+import gov.samhsa.c2s.dss.service.Redactor;
 import gov.samhsa.c2s.dss.service.document.dto.RedactedDocument;
 
 /**
  * The Interface DocumentRedactor.
  */
-public interface DocumentRedactor {
+public interface DocumentRedactor extends Redactor {
 
     /**
      * Redact document.

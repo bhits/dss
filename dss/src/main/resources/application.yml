@@ -71,6 +71,9 @@ c2s:
       enabled: false
       host: localhost
       port: 9630
+    # Configure document-validator context path based on running instance
+    document-validator:
+      context-path: "/document-validator"
 ---
 # Enables ssl and adds /dss context path when activated
 spring.profiles: standalone-ssl

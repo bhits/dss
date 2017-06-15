@@ -32,7 +32,6 @@ import gov.samhsa.c2s.dss.service.dto.ClinicalDocumentValidationResult;
 import gov.samhsa.c2s.dss.service.dto.DSSRequest;
 import gov.samhsa.c2s.dss.service.dto.DSSResponse;
 import gov.samhsa.c2s.dss.service.dto.SegmentDocumentResponse;
-import gov.samhsa.c2s.dss.service.exception.AuditClientException;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
 import gov.samhsa.c2s.dss.service.exception.InvalidOriginalClinicalDocumentException;
 import gov.samhsa.c2s.dss.service.exception.InvalidSegmentedClinicalDocumentException;
@@ -52,7 +51,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.*;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.CATEGORY_OBLIGATIONS_APPLIED;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.ORIGINAL_DOCUMENT;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.ORIGINAL_DOCUMENT_VALID;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.RULES_FIRED;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.SECTION_OBLIGATIONS_APPLIED;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.SEGMENTED_DOCUMENT;
+import static gov.samhsa.c2s.dss.service.audit.DssPredicateKey.SEGMENTED_DOCUMENT_VALID;
 
 @Service
 public class DocumentSegmentationImpl implements DocumentSegmentation {
@@ -429,8 +434,6 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
                     throw e;
                 }
             }
-        } else {
-            throw new AuditClientException("Audit Client bean not create.");
         }
     }
 

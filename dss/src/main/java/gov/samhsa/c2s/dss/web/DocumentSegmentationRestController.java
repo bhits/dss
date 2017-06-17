@@ -22,7 +22,7 @@ public class DocumentSegmentationRestController {
     private DocumentSegmentation documentSegmentation;
 
     @RequestMapping(value = "/segmentedDocument", method = RequestMethod.POST)
-    public DSSResponse segment(@Valid @RequestBody DSSRequest request) throws InvalidSegmentedClinicalDocumentException, AuditException, XmlDocumentReadFailureException, InvalidOriginalClinicalDocumentException {
+    public DSSResponse segment(@Valid @RequestBody DSSRequest request)  {
         return documentSegmentation.segmentDocument(request);
     }
 }

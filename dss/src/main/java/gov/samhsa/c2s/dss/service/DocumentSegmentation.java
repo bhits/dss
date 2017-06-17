@@ -25,9 +25,7 @@ public interface DocumentSegmentation {
      * @throws InvalidSegmentedClinicalDocumentException the invalid segmented clinical document exception
      * @throws AuditException                            the audit exception
      */
-    DSSResponse segmentDocument(DSSRequest dssRequest)
-            throws XmlDocumentReadFailureException,
-            InvalidSegmentedClinicalDocumentException, AuditException, InvalidOriginalClinicalDocumentException;
+    DSSResponse segmentDocument(DSSRequest dssRequest);
 
     /**
      * Sets the additional metadata for segmented clinical document.

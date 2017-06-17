@@ -12,7 +12,6 @@ import gov.samhsa.c2s.common.log.Logger;
 import gov.samhsa.c2s.common.log.LoggerFactory;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerException;
-import gov.samhsa.c2s.common.validation.exception.XmlDocumentReadFailureException;
 import gov.samhsa.c2s.dss.config.DssProperties;
 import gov.samhsa.c2s.dss.infrastructure.DocumentValidatorClient;
 import gov.samhsa.c2s.dss.infrastructure.dto.ValidationDiagnosticType;
@@ -32,6 +31,7 @@ import gov.samhsa.c2s.dss.service.dto.ClinicalDocumentValidationResult;
 import gov.samhsa.c2s.dss.service.dto.DSSRequest;
 import gov.samhsa.c2s.dss.service.dto.DSSResponse;
 import gov.samhsa.c2s.dss.service.dto.SegmentDocumentResponse;
+import gov.samhsa.c2s.dss.service.exception.AuditClientException;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
 import gov.samhsa.c2s.dss.service.exception.InvalidOriginalClinicalDocumentException;
 import gov.samhsa.c2s.dss.service.exception.InvalidSegmentedClinicalDocumentException;
@@ -120,7 +120,8 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
      * The additional metadata generator for segmented clinical document.
      */
     @Autowired
-    private AdditionalMetadataGeneratorForSegmentedClinicalDocument additionalMetadataGeneratorForSegmentedClinicalDocument;
+    private AdditionalMetadataGeneratorForSegmentedClinicalDocument
+            additionalMetadataGeneratorForSegmentedClinicalDocument;
 
     @Autowired
     private Optional<AuditClient> auditClient;
@@ -145,7 +146,8 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
      * @param documentFactModelExtractor                              the document fact model extractor
      * @param embeddedClinicalDocumentExtractor                       the embedded clinical document extractor
      * @param valueSetService                                         the value set service
-     * @param additionalMetadataGeneratorForSegmentedClinicalDocument the additional metadata generator for segmented clinical
+     * @param additionalMetadataGeneratorForSegmentedClinicalDocument the additional metadata generator for segmented
+     *                                                               clinical
      *                                                                document
      */
     @Autowired
@@ -158,7 +160,8 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
             DocumentFactModelExtractor documentFactModelExtractor,
             EmbeddedClinicalDocumentExtractor embeddedClinicalDocumentExtractor,
             ValueSetService valueSetService,
-            AdditionalMetadataGeneratorForSegmentedClinicalDocument additionalMetadataGeneratorForSegmentedClinicalDocument) {
+            AdditionalMetadataGeneratorForSegmentedClinicalDocument
+                    additionalMetadataGeneratorForSegmentedClinicalDocument) {
         this.ruleExecutionService = ruleExecutionService;
         this.documentEditor = documentEditor;
         this.marshaller = marshaller;
@@ -167,21 +170,20 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
         this.documentFactModelExtractor = documentFactModelExtractor;
         this.embeddedClinicalDocumentExtractor = embeddedClinicalDocumentExtractor;
         this.valueSetService = valueSetService;
-        this.additionalMetadataGeneratorForSegmentedClinicalDocument = additionalMetadataGeneratorForSegmentedClinicalDocument;
+        this.additionalMetadataGeneratorForSegmentedClinicalDocument =
+                additionalMetadataGeneratorForSegmentedClinicalDocument;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public DSSResponse segmentDocument(DSSRequest dssRequest)
-            throws XmlDocumentReadFailureException,
-            InvalidSegmentedClinicalDocumentException, AuditException, InvalidOriginalClinicalDocumentException {
+    public DSSResponse segmentDocument(DSSRequest dssRequest) {
         final Charset charset = getCharset(dssRequest.getDocumentEncoding());
         String document = new String(dssRequest.getDocument(), charset);
         final String originalDocument = document;
         Assert.hasText(document);
 
         //Validate Original Document
-        final ClinicalDocumentValidationResult originalClinicalDocumentValidationResult = validateOriginalClinicalDocument(dssRequest);
+        final ClinicalDocumentValidationResult originalClinicalDocumentValidationResult =
+                validateOriginalClinicalDocument(dssRequest);
 
         Assert.notNull(dssRequest.getXacmlResult());
         final String enforcementPolicies = marshal(dssRequest.getXacmlResult());
@@ -221,7 +223,8 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
             factModel.getClinicalFactList()
                     .stream()
                     .forEach(fact -> valueSetCategories.stream()
-                            .filter(dto -> fact.getCode().equals(dto.getCodedConceptCode()) && fact.getCodeSystem().equals(dto.getCodeSystemOid()))
+                            .filter(dto -> fact.getCode().equals(dto.getCodedConceptCode()) && fact.getCodeSystem()
+                                    .equals(dto.getCodeSystemOid()))
                             .map(ValueSetCategoryMapResponseDto::getValueSetCategoryCodes)
                             .filter(Objects::nonNull)
                             .findAny().ifPresent(fact::setValueSetCategories));
@@ -284,15 +287,22 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
         }
 
         //Validate Segmented Document
-        validateAndAuditedSegmentedClinicalDocument(originalClinicalDocumentValidationResult, charset, originalDocument, document, dssRequest,
-                factModel, redactedDocument, rulesFired);
+        try {
+            validateAndAuditedSegmentedClinicalDocument(originalClinicalDocumentValidationResult, charset,
+                    originalDocument, document, dssRequest,
+                    factModel, redactedDocument, rulesFired);
+        } catch (AuditException e) {
+            logger.error(e.getMessage(), e);
+            throw new AuditClientException(e.toString(),e);
+        }
 
         DSSResponse dssResponse = new DSSResponse();
         dssResponse.setSegmentedDocument(segmentDocumentResponse.getSegmentedDocumentXml().getBytes(DEFAULT_ENCODING));
         dssResponse.setEncoding(DEFAULT_ENCODING.toString());
         dssResponse.setCCDADocument(isCCDADocument(originalClinicalDocumentValidationResult.getDocumentType()));
         if (dssRequest.getEnableTryPolicyResponse().orElse(Boolean.FALSE)) {
-            dssResponse.setTryPolicyDocument(segmentDocumentResponse.getTryPolicyDocumentXml().getBytes(DEFAULT_ENCODING));
+            dssResponse.setTryPolicyDocument(segmentDocumentResponse.getTryPolicyDocumentXml().getBytes
+                    (DEFAULT_ENCODING));
         }
         return dssResponse;
     }
@@ -302,7 +312,8 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
             SegmentDocumentResponse segmentDocumentResponse,
             String senderEmailAddress, String recipientEmailAddress,
             String xdsDocumentEntryUniqueId, XacmlResult xacmlResult) {
-        final String additionalMetadataForSegmentedClinicalDocument = additionalMetadataGeneratorForSegmentedClinicalDocument
+        final String additionalMetadataForSegmentedClinicalDocument =
+                additionalMetadataGeneratorForSegmentedClinicalDocument
                 .generateMetadataXml(xacmlResult.getMessageId(),
                         segmentDocumentResponse.getSegmentedDocumentXml(),
                         segmentDocumentResponse
@@ -331,7 +342,7 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
                 rawData));
     }
 
-    private ClinicalDocumentValidationResult validateOriginalClinicalDocument(DSSRequest dssRequest) throws InvalidOriginalClinicalDocumentException {
+    private ClinicalDocumentValidationResult validateOriginalClinicalDocument(DSSRequest dssRequest) {
         ValidationResponseDto responseDto = documentValidatorClient
                 .validateClinicalDocument(new ValidationRequestDto(dssRequest.getDocument()));
 
@@ -339,13 +350,17 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
             if (isCCDADocument(responseDto.getDocumentType())) {
                 responseDto.getValidationResultDetails()
                         .stream()
-                        .filter(errorType -> errorType.getDiagnosticType().getTypeName().contains(ValidationDiagnosticType.CCDA_ERROR.getTypeName()))
-                        .forEach(detail -> logger.error("Validation Error -- xPath: " + detail.getXPath() + ", Message: " + detail.getDescription()));
+                        .filter(errorType -> errorType.getDiagnosticType().getTypeName().contains
+                                (ValidationDiagnosticType.CCDA_ERROR.getTypeName()))
+                        .forEach(detail -> logger.error("Validation Error -- xPath: " + detail.getXPath() + ", " +
+                                "Message: " + detail.getDescription()));
             } else {
                 responseDto.getValidationResultDetails()
-                        .forEach(detail -> logger.error("Schema Validation Error -- line number: " + detail.getDocumentLineNumber() + ", Message: " + detail.getDescription()));
+                        .forEach(detail -> logger.error("Schema Validation Error -- line number: " + detail
+                                .getDocumentLineNumber() + ", Message: " + detail.getDescription()));
             }
-            throw new InvalidOriginalClinicalDocumentException("Validation failed for document type: " + responseDto.getDocumentType());
+            throw new InvalidOriginalClinicalDocumentException("Validation failed for document type: " + responseDto
+                    .getDocumentType());
         }
 
         return ClinicalDocumentValidationResult.builder()
@@ -354,14 +369,15 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
                 .build();
     }
 
-    private void validateAndAuditedSegmentedClinicalDocument(ClinicalDocumentValidationResult originalClinicalDocumentValidationResult,
+    private void validateAndAuditedSegmentedClinicalDocument(ClinicalDocumentValidationResult
+                                                                     originalClinicalDocumentValidationResult,
                                                              Charset charset,
                                                              String originalDocument,
                                                              String segmentedDocument,
                                                              DSSRequest dssRequest,
                                                              FactModel factModel,
                                                              RedactedDocument redactedDocument,
-                                                             String rulesFired) throws InvalidSegmentedClinicalDocumentException, AuditException {
+                                                             String rulesFired) throws AuditException {
         ValidationResponseDto responseDto = documentValidatorClient
                 .validateClinicalDocument(new ValidationRequestDto(segmentedDocument.getBytes(charset)));
 
@@ -370,20 +386,25 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
                     factModel.getXacmlResult(), redactedDocument,
                     rulesFired, originalClinicalDocumentValidationResult.isValidDocument(),
                     responseDto.isDocumentValid(),
-                    dssRequest.getAuditFailureByPass().orElse(dssProperties.getDocumentSegmentationImpl().isDefaultIsAuditFailureByPass()));
+                    dssRequest.getAuditFailureByPass().orElse(dssProperties.getDocumentSegmentationImpl()
+                            .isDefaultIsAuditFailureByPass()));
         }
 
         if (!responseDto.isDocumentValid()) {
             if (isCCDADocument(responseDto.getDocumentType())) {
                 responseDto.getValidationResultDetails()
                         .stream()
-                        .filter(errorType -> errorType.getDiagnosticType().getTypeName().contains(ValidationDiagnosticType.CCDA_ERROR.getTypeName()))
-                        .forEach(detail -> logger.error("Validation Error -- xPath: " + detail.getXPath() + ", Message: " + detail.getDescription()));
+                        .filter(errorType -> errorType.getDiagnosticType().getTypeName().contains
+                                (ValidationDiagnosticType.CCDA_ERROR.getTypeName()))
+                        .forEach(detail -> logger.error("Validation Error -- xPath: " + detail.getXPath() + ", " +
+                                "Message: " + detail.getDescription()));
             } else {
                 responseDto.getValidationResultDetails()
-                        .forEach(detail -> logger.error("Schema Validation Error -- line number: " + detail.getDocumentLineNumber() + ", Message: " + detail.getDescription()));
+                        .forEach(detail -> logger.error("Schema Validation Error -- line number: " + detail
+                                .getDocumentLineNumber() + ", Message: " + detail.getDescription()));
             }
-            throw new InvalidSegmentedClinicalDocumentException("Validation failed for document type: " + responseDto.getDocumentType());
+            throw new InvalidSegmentedClinicalDocumentException("Validation failed for document type: " + responseDto
+                    .getDocumentType());
         }
     }
 

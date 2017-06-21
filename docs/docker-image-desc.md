@@ -6,7 +6,8 @@ This service segments a patient's sensitive health information using the patient
 
 # Supported Source Code Tags and Current `Dockerfile` Link
 
-[`2.1.0 (latest)`](https://github.com/bhits-dev/dss/releases/tag/2.1.0), [`1.16.0`](https://github.com/bhits-dev/dss/releases/tag/1.16.0)
+[`2.2.0 (latest)`](https://github.com/bhits-dev/dss/releases/tag/2.2.0), [`2.1.0`](https://github
+.com/bhits-dev/dss/releases/tag/2.1.0), [`1.16.0`](https://github.com/bhits-dev/dss/releases/tag/1.16.0)
 
 [`Current Dockerfile`](../dss/src/main/docker/Dockerfile)
 
@@ -26,7 +27,7 @@ The Document Segmentation Service (DSS) is responsible for the segmentation of t
 8. Segmented Document Validation: The DSS validates the final segmented document before returning it to ensure the output of DSS is still a valid CCD document.
 9. Auditing: If enabled, the DSS also audits the segmentation process using *Logback Audit* server.
 
-For more information and related downloads for Consent2Share, please visit [Consent2Share](https://bhits.github.io/consent2share/).
+For more information and related downloads for Consent2Share, please visit [Consent2Share](https://bhits-dev.github.io/consent2share/).
 
 # How to use this image
 

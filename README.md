@@ -144,7 +144,7 @@ View [license](LICENSE) information for the software contained in this repositor
 
 ## Contact
 
-If you have any questions, comments, or concerns please see [Consent2Share](https://bhits.github.io/consent2share/) project site.
+If you have any questions, comments, or concerns please see [Consent2Share](https://bhits-dev.github.io/consent2share/) project site.
 
 ## Report Issues
 

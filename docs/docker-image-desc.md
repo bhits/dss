@@ -6,8 +6,7 @@ This service segments a patient's sensitive health information using the patient
 
 # Supported Source Code Tags and Current `Dockerfile` Link
 
-[`2.2.0 (latest)`](https://github.com/bhits-dev/dss/releases/tag/2.2.0), [`2.1.0`](https://github
-.com/bhits-dev/dss/releases/tag/2.1.0), [`1.16.0`](https://github.com/bhits-dev/dss/releases/tag/1.16.0)
+[`2.2.0 (latest)`](https://github.com/bhits-dev/dss/releases/tag/2.2.0), [`2.1.0`](https://github.com/bhits-dev/dss/releases/tag/2.1.0), [`1.16.0`](https://github.com/bhits-dev/dss/releases/tag/1.16.0)
 
 [`Current Dockerfile`](../dss/src/main/docker/Dockerfile)
 

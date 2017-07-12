@@ -42,6 +42,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyString;
@@ -314,12 +315,12 @@ public class DocumentRedactorImplTest {
         final String c32WithGeneratedEntryIds = "someDocument";
         final Document documentMock = mock(Document.class);
         final NodeList nodeListMock = mock(NodeList.class);
+        final Stream<Node> nodeStreamMock=mock(Stream.class);
         when(documentXmlConverterSpy.loadDocument(c32WithGeneratedEntryIds))
                 .thenReturn(documentMock);
         when(
-                documentAccessorMock.getNodeList(documentMock,
-                        "//hl7:generatedEntryId")).thenReturn(nodeListMock);
-        when(nodeListMock.getLength()).thenReturn(0);
+                documentAccessorMock.getNodeListAsStream(documentMock,
+                        "//hl7:generatedEntryId")).thenReturn(nodeStreamMock);
         doThrow(Exception.class).when(documentXmlConverterSpy)
                 .convertXmlDocToString(documentMock);
 
@@ -333,7 +334,7 @@ public class DocumentRedactorImplTest {
             throws Exception {
         // Arrange
         when(
-                documentAccessorMock.getNodeList(isA(Document.class),
+                documentAccessorMock.getNodeListAsStream(isA(Document.class),
                         eq("//hl7:generatedEntryId"))).thenThrow(
                 XPathExpressionException.class);
 

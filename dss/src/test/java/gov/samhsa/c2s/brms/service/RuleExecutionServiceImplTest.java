@@ -83,16 +83,19 @@ public class RuleExecutionServiceImplTest {
     }
 
     @SuppressWarnings("unchecked")
-    @Test
+    @Test(expected = SimpleMarshallerException.class)
     public void testAssertAndExecuteClinicalFacts_Marshaller_Throws_JAXBException()
             throws Throwable {
         // Arrange
         StatefulKnowledgeSession sessionMock = mock(StatefulKnowledgeSession.class);
         doReturn(sessionMock).when(sut).createStatefulKnowledgeSession();
         String factModelStringMock = "factModelStringMock";
+
+        FactModel factModel=null;
+        doThrow(SimpleMarshallerException.class).when(sut).assertAndExecuteClinicalFacts(factModel);
         when(
                 marshallerMock.unmarshalFromXml(FactModel.class,
-                        factModelStringMock)).thenThrow(SimpleMarshallerException.class);
+                        factModelStringMock)).thenReturn(factModel);
 
         // Act
         AssertAndExecuteClinicalFactsResponse response = sut

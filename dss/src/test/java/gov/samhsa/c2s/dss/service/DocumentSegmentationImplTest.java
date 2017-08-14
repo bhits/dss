@@ -22,7 +22,6 @@ import gov.samhsa.c2s.common.document.transformer.XmlTransformerImpl;
 import gov.samhsa.c2s.common.filereader.FileReader;
 import gov.samhsa.c2s.common.filereader.FileReaderImpl;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerImpl;
-import gov.samhsa.c2s.common.validation.XmlValidation;
 import gov.samhsa.c2s.common.validation.XmlValidationResult;
 import gov.samhsa.c2s.common.validation.exception.InvalidXmlDocumentException;
 import gov.samhsa.c2s.common.validation.exception.XmlDocumentReadFailureException;
@@ -45,7 +44,6 @@ import org.apache.xml.security.utils.EncryptionConstants;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -71,11 +69,11 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class DocumentSegmentationImplTest {
+    public static final String DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3 = "CCDA_R2_1_CCD_V3";
     private static final String PURPOSE_OF_USE = "TREATMENT";
     private static final String XDS_ENTRY_ID = "123";
     private static final String MESSAGE_ID = "cf8cace6-6331-4a45-8e79-5bf503925be4";
@@ -246,7 +244,7 @@ public class DocumentSegmentationImplTest {
         documentRedactorMock = mock(DocumentRedactorImpl.class);
         when(
                 documentRedactorMock.redactDocument(eq(testOriginal_C32_xml),
-                        eq(ruleExecutionContainerObj), isA(FactModel.class)))
+                        eq(ruleExecutionContainerObj), isA(FactModel.class), eq(DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3)))
                 .thenReturn(redactedDocumentMock);
 
         // Document tagger

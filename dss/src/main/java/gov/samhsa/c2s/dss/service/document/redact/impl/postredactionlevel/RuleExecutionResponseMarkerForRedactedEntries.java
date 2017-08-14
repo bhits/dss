@@ -8,7 +8,6 @@ import gov.samhsa.c2s.common.document.accessor.DocumentAccessor;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractPostRedactionLevelRedactionHandler;
 import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
@@ -32,7 +31,8 @@ public class RuleExecutionResponseMarkerForRedactedEntries extends AbstractPostR
 
     @Override
     public void execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
-                        RuleExecutionContainer ruleExecutionContainer, RedactionHandlerResult preRedactionResults, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
+                        RuleExecutionContainer ruleExecutionContainer, RedactionHandlerResult preRedactionResults,
+                        PdpObligationsComplementSetDto pdpObligationsComplementSetDto, String documentType) {
         // Mark redacted sections and entries in ruleExecutionContainer,
         // so they can be ignored during tagging
         final Set<String> redactSectionCodesAndGeneratedEntryIds = preRedactionResults.getRedactSectionCodesAndGeneratedEntryIds();

@@ -55,9 +55,10 @@ public class UnsupportedHeaderElementHandlerTest {
         String c32FileName = "c32.xml";
         String c32 = fileReader.readFile(TEST_PATH + c32FileName);
         Document c32Document = documentXmlConverter.loadDocument(c32);
+        String documentType = "documentType";
 
         // Act
-        final RedactionHandlerResult redactionResult = sut.execute(c32Document);
+        final RedactionHandlerResult redactionResult = sut.execute(c32Document, documentType);
 
         // Assert
         assertEquals(redactionResult.getRedactNodeList().size(), 1);

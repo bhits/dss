@@ -15,5 +15,5 @@ public abstract class AbstractDocumentLevelRedactionHandler extends
     protected AbstractDocumentLevelRedactionHandler() {
     }
 
-    public abstract RedactionHandlerResult execute(Document xmlDocument);
+    public abstract RedactionHandlerResult execute(Document xmlDocument, String documentType);
 }

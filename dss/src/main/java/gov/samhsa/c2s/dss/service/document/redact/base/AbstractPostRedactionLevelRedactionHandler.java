@@ -61,5 +61,5 @@ public abstract class AbstractPostRedactionLevelRedactionHandler extends
      */
     public abstract void execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument,
                                  RuleExecutionContainer ruleExecutionContainer, RedactionHandlerResult preRedactionResults,
-                                 PdpObligationsComplementSetDto pdpObligationsComplementSet);
+                                 PdpObligationsComplementSetDto pdpObligationsComplementSet, String documentType);
 }

@@ -42,7 +42,7 @@ public class UnsupportedHeaderElementHandler extends
     }
 
     @Override
-    public RedactionHandlerResult execute(Document xmlDocument) {
+    public RedactionHandlerResult execute(Document xmlDocument, String documentType) {
         try {
             // Get complete header list
             final Stream<Node> allHeaders = documentAccessor.getNodeListAsStream(xmlDocument,

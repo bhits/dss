@@ -170,7 +170,10 @@ public class DocumentRedactorImpl implements DocumentRedactor {
     }
 
     @Override
-    public RedactedDocument redactDocument(String document, RuleExecutionContainer ruleExecutionContainer, FactModel factModel) {
+    public RedactedDocument redactDocument(String document,
+                                           RuleExecutionContainer ruleExecutionContainer,
+                                           FactModel factModel,
+                                           String documentType) {
         String tryPolicyDocument = null;
         RedactionHandlerResult combinedResults;
         final XacmlResult xacmlResult = factModel.getXacmlResult();
@@ -207,7 +210,7 @@ public class DocumentRedactorImpl implements DocumentRedactor {
             // DOCUMENT LEVEL REDACTION HANDLERS
             final RedactionHandlerResult documentLevelResults = documentLevelRedactionHandlers
                     .stream()
-                    .map(handler -> handler.execute(xmlDocument))
+                    .map(handler -> handler.execute(xmlDocument, documentType))
                     .reduce(RedactionHandlerResult::concat)
                     .orElseGet(RedactionHandlerResult::new);
 
@@ -215,7 +218,9 @@ public class DocumentRedactorImpl implements DocumentRedactor {
             final RedactionHandlerResult obligationLevelResults = xacmlResult.getPdpObligations().stream()
                     .flatMap(obligation -> obligationLevelRedactionHandlers
                             .stream()
-                            .map(handler -> handler.execute(xmlDocument, xacmlResult, factModel, factModelDocument, ruleExecutionContainer, obligation, pdpObligationsComplementSetDto)))
+                            .map(handler -> handler.execute(xmlDocument, xacmlResult, factModel,
+                                    factModelDocument, ruleExecutionContainer, obligation,
+                                    pdpObligationsComplementSetDto)))
                     .reduce(RedactionHandlerResult::concat)
                     .orElseGet(RedactionHandlerResult::new);
 
@@ -223,7 +228,9 @@ public class DocumentRedactorImpl implements DocumentRedactor {
             final RedactionHandlerResult clinicalFactLevelResults = factModel.getClinicalFactList().stream()
                     .flatMap(fact -> clinicalFactLevelRedactionHandlers
                             .stream()
-                            .map(handler -> handler.execute(xmlDocument, xacmlResult, factModel, factModelDocument, fact, ruleExecutionContainer, pdpObligationsComplementSetDto)))
+                            .map(handler -> handler.execute(xmlDocument, xacmlResult, factModel,
+                                    factModelDocument, fact, ruleExecutionContainer,
+                                    pdpObligationsComplementSetDto)))
                     .reduce(RedactionHandlerResult::concat)
                     .orElseGet(RedactionHandlerResult::new);
 
@@ -242,7 +249,10 @@ public class DocumentRedactorImpl implements DocumentRedactor {
             redactNodesIfNotNull(combinedResults.getRedactNodeList());
 
             // POST REDACTION LEVEL REDACTION HANDLERS
-            postRedactionLevelRedactionHandlers.forEach(handler -> handler.execute(xmlDocument, xacmlResult, factModel, factModelDocument, ruleExecutionContainer, combinedResults, pdpObligationsComplementSetDto));
+            postRedactionLevelRedactionHandlers.forEach(handler ->
+                    handler.execute(xmlDocument, xacmlResult, factModel, factModelDocument,
+                            ruleExecutionContainer, combinedResults,
+                            pdpObligationsComplementSetDto, documentType));
 
             // Convert redacted document to xml string
             document = documentXmlConverter.convertXmlDocToString(xmlDocument);

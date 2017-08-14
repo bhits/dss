@@ -66,7 +66,7 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
     private static final String CCDA_PREFIX = "CCDA";
 
     private final Logger logger = LoggerFactory
-            .getLogger(this.getClass());
+            .getLogger(DocumentSegmentationImpl.class);
 
     /**
      * The rule execution web service client.
@@ -147,7 +147,7 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
      * @param embeddedClinicalDocumentExtractor                       the embedded clinical document extractor
      * @param valueSetService                                         the value set service
      * @param additionalMetadataGeneratorForSegmentedClinicalDocument the additional metadata generator for segmented
-     *                                                               clinical
+     *                                                                clinical
      *                                                                document
      */
     @Autowired
@@ -184,6 +184,7 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
         //Validate Original Document
         final ClinicalDocumentValidationResult originalClinicalDocumentValidationResult =
                 validateOriginalClinicalDocument(dssRequest);
+        final String documentType = originalClinicalDocumentValidationResult.getDocumentType();
 
         Assert.notNull(dssRequest.getXacmlResult());
         final String enforcementPolicies = marshal(dssRequest.getXacmlResult());
@@ -246,7 +247,7 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
 
             // redact document
             redactedDocument = documentRedactor.redactDocument(document,
-                    ruleExecutionContainer, factModel);
+                    ruleExecutionContainer, factModel, documentType);
             document = redactedDocument.getRedactedDocument();
 
             // set tryPolicyDocument in the response
@@ -293,13 +294,13 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
                     factModel, redactedDocument, rulesFired);
         } catch (AuditException e) {
             logger.error(e.getMessage(), e);
-            throw new AuditClientException(e.toString(),e);
+            throw new AuditClientException(e.toString(), e);
         }
 
         DSSResponse dssResponse = new DSSResponse();
         dssResponse.setSegmentedDocument(segmentDocumentResponse.getSegmentedDocumentXml().getBytes(DEFAULT_ENCODING));
         dssResponse.setEncoding(DEFAULT_ENCODING.toString());
-        dssResponse.setCCDADocument(isCCDADocument(originalClinicalDocumentValidationResult.getDocumentType()));
+        dssResponse.setCCDADocument(isCCDADocument(documentType));
         if (dssRequest.getEnableTryPolicyResponse().orElse(Boolean.FALSE)) {
             dssResponse.setTryPolicyDocument(segmentDocumentResponse.getTryPolicyDocumentXml().getBytes
                     (DEFAULT_ENCODING));
@@ -314,13 +315,13 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
             String xdsDocumentEntryUniqueId, XacmlResult xacmlResult) {
         final String additionalMetadataForSegmentedClinicalDocument =
                 additionalMetadataGeneratorForSegmentedClinicalDocument
-                .generateMetadataXml(xacmlResult.getMessageId(),
-                        segmentDocumentResponse.getSegmentedDocumentXml(),
-                        segmentDocumentResponse
-                                .getExecutionResponseContainerXml(),
-                        senderEmailAddress, recipientEmailAddress, xacmlResult
-                                .getSubjectPurposeOfUse().getPurpose(),
-                        xdsDocumentEntryUniqueId);
+                        .generateMetadataXml(xacmlResult.getMessageId(),
+                                segmentDocumentResponse.getSegmentedDocumentXml(),
+                                segmentDocumentResponse
+                                        .getExecutionResponseContainerXml(),
+                                senderEmailAddress, recipientEmailAddress, xacmlResult
+                                        .getSubjectPurposeOfUse().getPurpose(),
+                                xdsDocumentEntryUniqueId);
 
         segmentDocumentResponse
                 .setPostSegmentationMetadataXml(additionalMetadataForSegmentedClinicalDocument);
@@ -345,6 +346,8 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
     private ClinicalDocumentValidationResult validateOriginalClinicalDocument(DSSRequest dssRequest) {
         ValidationResponseDto responseDto = documentValidatorClient
                 .validateClinicalDocument(new ValidationRequestDto(dssRequest.getDocument()));
+        logger.info(() -> "Original Document Type: " + responseDto.getDocumentType());
+        logger.info(() -> "Original Document Validation Result: " + responseDto.isDocumentValid());
 
         if (!responseDto.isDocumentValid()) {
             if (isCCDADocument(responseDto.getDocumentType())) {
@@ -380,6 +383,8 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
                                                              String rulesFired) throws AuditException {
         ValidationResponseDto responseDto = documentValidatorClient
                 .validateClinicalDocument(new ValidationRequestDto(segmentedDocument.getBytes(charset)));
+        logger.info(() -> "Segmented Document Type: " + responseDto.getDocumentType());
+        logger.info(() -> "Segmented Document Validation Result: " + responseDto.isDocumentValid());
 
         if (dssRequest.getAudited().orElse(dssProperties.getDocumentSegmentationImpl().isDefaultIsAudited())) {
             auditSegmentation(originalDocument, segmentedDocument,

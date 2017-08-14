@@ -12,7 +12,6 @@ import gov.samhsa.c2s.dss.service.document.redact.base.AbstractDocumentLevelReda
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractObligationLevelRedactionHandler;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractPostRedactionLevelRedactionHandler;
 import gov.samhsa.c2s.dss.service.document.redact.dto.PdpObligationsComplementSetDto;
-
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -30,7 +29,7 @@ public class RedactionHandlerIdentityConfig {
     public AbstractDocumentLevelRedactionHandler identityDocumentLevelRedactionHandler() {
         return new AbstractDocumentLevelRedactionHandler() {
             @Override
-            public RedactionHandlerResult execute(Document xmlDocument) {
+            public RedactionHandlerResult execute(Document xmlDocument, String documentType) {
                 return RedactionHandlerResult.empty();
             }
 
@@ -78,7 +77,12 @@ public class RedactionHandlerIdentityConfig {
     public AbstractPostRedactionLevelRedactionHandler identityPostRedactionLevelRedactionHandler(DocumentAccessor documentAccessor) {
         return new AbstractPostRedactionLevelRedactionHandler(documentAccessor) {
             @Override
-            public void execute(Document xmlDocument, XacmlResult xacmlResult, FactModel factModel, Document factModelDocument, RuleExecutionContainer ruleExecutionContainer, RedactionHandlerResult preRedactionResults, PdpObligationsComplementSetDto pdpObligationsComplementSetDto) {
+            public void execute(Document xmlDocument, XacmlResult xacmlResult,
+                                FactModel factModel, Document factModelDocument,
+                                RuleExecutionContainer ruleExecutionContainer,
+                                RedactionHandlerResult preRedactionResults,
+                                PdpObligationsComplementSetDto pdpObligationsComplementSetDto,
+                                String documentType) {
                 // do nothing
             }
 

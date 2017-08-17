@@ -12,6 +12,7 @@ import gov.samhsa.c2s.common.log.Logger;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshaller;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerException;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerImpl;
+import gov.samhsa.c2s.dss.config.DssProperties;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetServiceImplMock;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ValueSetCategoryResponseDto;
@@ -29,7 +30,9 @@ import org.w3c.dom.Node;
 
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -40,23 +43,26 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DocumentCleanupForNoEntryAndNoSectionTest {
 
+    public static final String DOCUMENT_TYPE_HITSP_C32 = "HITSP_C32";
     public static final String TEST_PATH = "sampleC32-redactionHandlers/";
     public static final String FACTMODEL_PATH = "factmodel/";
     public static final String RULEEXECUTIONCONTAINER_PATH = "ruleexecutioncontainer/";
-
+    private static ValueSetService valueSetService;
     private FileReader fileReader;
     private SimpleMarshaller marshaller;
     private DocumentAccessor documentAccessor;
     private DocumentXmlConverter documentXmlConverter;
     private EmbeddedClinicalDocumentExtractor embeddedClinicalDocumentExtractor;
-
-    private static ValueSetService valueSetService;
-
+    private DssProperties dssProperties;
     private DocumentCleanupForNoEntryAndNoSection sut;
 
     @Before
@@ -69,7 +75,14 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
         ReflectionTestUtils.setField(embeddedClinicalDocumentExtractor, "documentXmlConverter", documentXmlConverter);
         ReflectionTestUtils.setField(embeddedClinicalDocumentExtractor, "documentAccessor", documentAccessor);
         valueSetService = new ValueSetServiceImplMock(fileReader);
-        sut = new DocumentCleanupForNoEntryAndNoSection(documentAccessor);
+        dssProperties = new DssProperties();
+        DssProperties.Redact redact = new DssProperties.Redact();
+        final List<String> requiredSections = Collections.emptyList();
+        DssProperties.DocumentTypeDetail documentTypeDetail = new DssProperties.DocumentTypeDetail();
+        documentTypeDetail.setRequiredSections(requiredSections);
+        redact.getDocumentTypes().put(DOCUMENT_TYPE_HITSP_C32, documentTypeDetail);
+        dssProperties.setRedact(redact);
+        sut = new DocumentCleanupForNoEntryAndNoSection(documentAccessor, dssProperties);
     }
 
     @Test
@@ -97,7 +110,7 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
 
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto, DOCUMENT_TYPE_HITSP_C32);
 
         // Assert
         assertEquals(1,
@@ -141,7 +154,7 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
 
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto, DOCUMENT_TYPE_HITSP_C32);
 
         // Assert
         assertEquals(1,
@@ -165,7 +178,7 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
         // Arrange
         final Logger loggerMock = mock(Logger.class);
         final DocumentAccessor documentAccessorMock = mock(DocumentAccessor.class);
-        sut = new DocumentCleanupForNoEntryAndNoSection(documentAccessorMock);
+        sut = new DocumentCleanupForNoEntryAndNoSection(documentAccessorMock, dssProperties);
         ReflectionTestUtils.setField(sut, "logger", loggerMock);
         final String c32FileName = "MIE_SampleC32-sectionWithNoEntries.xml";
         final String factmodelXml = fileReader.readFile(TEST_PATH
@@ -196,7 +209,7 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
 
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto, DOCUMENT_TYPE_HITSP_C32);
 
         // Assert
         assertEquals(2,
@@ -220,7 +233,7 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
             XPathExpressionException {
         // Arrange
         final DocumentAccessor documentAccessorMock = mock(DocumentAccessor.class);
-        sut = new DocumentCleanupForNoEntryAndNoSection(documentAccessorMock);
+        sut = new DocumentCleanupForNoEntryAndNoSection(documentAccessorMock, dssProperties);
         final String c32FileName = "MIE_SampleC32-sectionWithNoEntries.xml";
         final String factmodelXml = fileReader.readFile(TEST_PATH
                 + FACTMODEL_PATH + c32FileName);
@@ -257,7 +270,7 @@ public class DocumentCleanupForNoEntryAndNoSectionTest {
 
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto, DOCUMENT_TYPE_HITSP_C32);
 
         // Assert
         assertEquals(2,

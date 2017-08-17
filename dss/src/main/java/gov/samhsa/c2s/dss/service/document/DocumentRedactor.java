@@ -41,10 +41,13 @@ public interface DocumentRedactor extends Redactor {
      * @param document               the document
      * @param ruleExecutionContainer the rule execution container
      * @param factModel              the fact model
+     * @param documentType           the document type
      * @return the string
      */
     RedactedDocument redactDocument(String document,
-                                    RuleExecutionContainer ruleExecutionContainer, FactModel factModel);
+                                    RuleExecutionContainer ruleExecutionContainer,
+                                    FactModel factModel,
+                                    String documentType);
 
     /**
      * Clean up generated entry ids.

@@ -2,47 +2,42 @@ package gov.samhsa.c2s.dss.service.document.redact.impl.documentlevel;
 
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessor;
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessorException;
+import gov.samhsa.c2s.dss.config.DssProperties;
 import gov.samhsa.c2s.dss.service.document.dto.RedactionHandlerResult;
 import gov.samhsa.c2s.dss.service.document.redact.RedactionHandlerException;
 import gov.samhsa.c2s.dss.service.document.redact.base.AbstractDocumentLevelRedactionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 
 @Service
-@ConfigurationProperties(prefix = "c2s.dss.redact")
 public class UnsupportedSectionHandler extends
         AbstractDocumentLevelRedactionHandler {
 
     private static final String XPATH_SECTION = "//hl7:structuredBody/hl7:component[child::hl7:section[child::hl7:code[@code='%1']]]";
     private static final String XPATH_ALL_SECTION_CODES = "//hl7:structuredBody/hl7:component/hl7:section/hl7:code/@code";
 
-    private List<String> sectionWhiteList = new ArrayList<>();
+    private final DssProperties dssProperties;
 
     public UnsupportedSectionHandler() {
+        this.dssProperties = null;
     }
 
     @Autowired
-    public UnsupportedSectionHandler(DocumentAccessor documentAccessor) {
+    public UnsupportedSectionHandler(DocumentAccessor documentAccessor, DssProperties dssProperties) {
         super(documentAccessor);
-    }
-
-    public List<String> getSectionWhiteList() {
-        return sectionWhiteList;
+        this.dssProperties = dssProperties;
     }
 
     @Override
-    public RedactionHandlerResult execute(Document xmlDocument) {
+    public RedactionHandlerResult execute(Document xmlDocument, String documentType) {
         try {
             // Get complete section list
             final Stream<Node> sectionList = documentAccessor.getNodeListAsStream(xmlDocument,
@@ -53,7 +48,7 @@ public class UnsupportedSectionHandler extends
             final Set<String> sectionRedactionList = sectionList
                     .map(Node::getNodeValue)
                     .filter(StringUtils::hasText)
-                    .filter(nodeValue -> !sectionWhiteList.contains(nodeValue))
+                    .filter(nodeValue -> !dssProperties.getRedact().getDocumentTypes().get(documentType).getSectionWhiteList().contains(nodeValue))
                     .collect(toSet());
 
             // Add redaction list to the global list.

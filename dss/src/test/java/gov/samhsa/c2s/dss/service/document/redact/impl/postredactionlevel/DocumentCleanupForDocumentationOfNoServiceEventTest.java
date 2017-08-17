@@ -36,6 +36,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(MockitoJUnitRunner.class)
 public class DocumentCleanupForDocumentationOfNoServiceEventTest {
 
+    public static final String DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3 = "CCDA_R2_1_CCD_V3";
     public static final String TEST_PATH = "sampleC32-redactionHandlers/";
     public static final String FACTMODEL_PATH = "factmodel/";
     public static final String RULEEXECUTIONCONTAINER_PATH = "ruleexecutioncontainer/";
@@ -91,7 +92,7 @@ public class DocumentCleanupForDocumentationOfNoServiceEventTest {
 
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3);
 
         // Assert
         assertEquals(1, documentAccessor.getNodeList(c32Document, "//hl7:documentationOf").getLength());
@@ -127,7 +128,7 @@ public class DocumentCleanupForDocumentationOfNoServiceEventTest {
 
         // Act
         sut.execute(c32Document, factModel.getXacmlResult(), factModel,
-                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto);
+                factModelDocument, ruleExecutionContainer, preRedactionResults, pdpObligationsComplementSetDto, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3);
 
         // Assert
         assertEquals(0, documentAccessor.getNodeList(c32Document, "//hl7:documentationOf").getLength());

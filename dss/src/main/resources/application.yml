@@ -39,14 +39,76 @@ c2s:
         - "authorization"
         - "componentOf"
         - "component"
-      sectionWhiteList:
-        - "11450-4" # problems
-        - "48765-2" # allergies
-        - "10160-0" # medications
-        - "30954-2" # results
-        - "29762-2" # social history
-        - "8716-3" # vital signs
-        - "47519-4" # procedures
+      document-types:
+        CCDA_R2_1_CCD_V3:
+          required-sections:
+            - "11450-4" # problems
+            - "48765-2" # allergies
+            - "10160-0" # medications
+            - "30954-2" # results
+            - "29762-2" # social history
+            - "8716-3" # vital signs
+          section-white-list:
+            - "11450-4" # problems
+            - "48765-2" # allergies
+            - "10160-0" # medications
+            - "30954-2" # results
+            - "29762-2" # social history
+            - "8716-3" # vital signs
+            - "47519-4" # procedures
+        CCDA_R2_0_CCD_V2:
+          required-sections:
+            - "11450-4" # problems
+            - "48765-2" # allergies
+            - "10160-0" # medications
+            - "30954-2" # results
+            - "29762-2" # social history
+            - "8716-3" # vital signs
+          section-white-list:
+            - "11450-4" # problems
+            - "48765-2" # allergies
+            - "10160-0" # medications
+            - "30954-2" # results
+            - "29762-2" # social history
+            - "8716-3" # vital signs
+            - "47519-4" # procedures
+        CCDA_R1_1_CCD_V1:
+          required-sections:
+            - "11450-4" # problems
+            - "48765-2" # allergies
+            - "10160-0" # medications
+            - "30954-2" # results
+          section-white-list:
+            - "11450-4" # problems
+            - "48765-2" # allergies
+            - "10160-0" # medications
+            - "30954-2" # results
+            - "29762-2" # social history
+            - "8716-3" # vital signs
+            - "47519-4" # procedures
+        HITSP_C32:
+          required-sections:
+            - "11450-4" # problems
+            - "48765-2" # allergies
+            - "10160-0" # medications
+            - "30954-2" # results
+          section-white-list:
+            - "11450-4" # problems
+            - "48765-2" # allergies
+            - "10160-0" # medications
+            - "30954-2" # results
+            - "29762-2" # social history
+            - "8716-3" # vital signs
+            - "47519-4" # procedures
+        CCDA_R2_1_CARE_PLAN_V2:
+          required-sections:
+            - "61146-7" # goals
+            - "75310-3" # health concerns
+          section-white-list:
+            - "61146-7" # goals
+            - "75310-3" # health concerns
+            - "11383-7" # health status evaluations and outcomes
+            - "62387-6" # interventions
     DocumentTaggerImpl:
       additionalSections:
         - code: PROHIBITION_ON_REDISCLOSURE

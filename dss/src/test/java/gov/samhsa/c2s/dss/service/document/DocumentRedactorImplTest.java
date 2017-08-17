@@ -1,6 +1,15 @@
 package gov.samhsa.c2s.dss.service.document;
 
-import gov.samhsa.c2s.brms.domain.*;
+import gov.samhsa.c2s.brms.domain.ClinicalFact;
+import gov.samhsa.c2s.brms.domain.Confidentiality;
+import gov.samhsa.c2s.brms.domain.FactModel;
+import gov.samhsa.c2s.brms.domain.ObligationPolicyDocument;
+import gov.samhsa.c2s.brms.domain.RefrainPolicy;
+import gov.samhsa.c2s.brms.domain.RuleExecutionContainer;
+import gov.samhsa.c2s.brms.domain.RuleExecutionResponse;
+import gov.samhsa.c2s.brms.domain.Sensitivity;
+import gov.samhsa.c2s.brms.domain.UsPrivacyLaw;
+import gov.samhsa.c2s.brms.domain.XacmlResult;
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessor;
 import gov.samhsa.c2s.common.document.accessor.DocumentAccessorImpl;
 import gov.samhsa.c2s.common.document.converter.DocumentXmlConverterImpl;
@@ -8,6 +17,7 @@ import gov.samhsa.c2s.common.document.transformer.XmlTransformer;
 import gov.samhsa.c2s.common.document.transformer.XmlTransformerImpl;
 import gov.samhsa.c2s.common.filereader.FileReaderImpl;
 import gov.samhsa.c2s.common.marshaller.SimpleMarshallerImpl;
+import gov.samhsa.c2s.dss.config.DssProperties;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetService;
 import gov.samhsa.c2s.dss.infrastructure.valueset.ValueSetServiceImplMock;
 import gov.samhsa.c2s.dss.infrastructure.valueset.dto.ConceptCodeAndCodeSystemOidDto;
@@ -41,16 +51,28 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 public class DocumentRedactorImplTest {
+    public static final String DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3 = "CCDA_R2_1_CCD_V3";
     public static final List<String> headersWhiteList =
             Arrays.asList("realmCode", "typeId", "templateId", "id", "code",
                     "title", "effectiveTime", "confidentialityCode",
@@ -102,6 +124,8 @@ public class DocumentRedactorImplTest {
     private RuleExecutionContainer ruleExecutionContainer;
 
     private RuleExecutionContainer ruleExecutionContainerWithHivEth;
+
+    private DssProperties dssProperties;
 
     private static Document readDocument(String filePath) throws IOException,
             ClassNotFoundException {
@@ -242,6 +266,14 @@ public class DocumentRedactorImplTest {
 
         documentXmlConverterSpy = setSpyDocumentXmlConverter();
 
+        dssProperties = new DssProperties();
+        DssProperties.Redact redact = new DssProperties.Redact();
+        final List<String> requiredSections = Arrays.asList("11450-4", "48765-2", "101460-0", "30954-2", "29762-2", "8716-3");
+        DssProperties.DocumentTypeDetail documentTypeDetail = new DssProperties.DocumentTypeDetail();
+        documentTypeDetail.setRequiredSections(requiredSections);
+        redact.getDocumentTypes().put(DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3, documentTypeDetail);
+        dssProperties.setRedact(redact);
+
         final Set<AbstractObligationLevelRedactionHandler> obligationLevelChain = new HashSet<>();
         final Set<AbstractClinicalFactLevelRedactionHandler> clinicalFactLevelChain = new HashSet<>();
         final Set<AbstractPostRedactionLevelRedactionHandler> postRedactionChain = new HashSet<>();
@@ -257,7 +289,7 @@ public class DocumentRedactorImplTest {
         clinicalFactLevelChain.add(new HumanReadableTextNodeByDisplayName(
                 documentAccessor));
         postRedactionChain.add(new DocumentCleanupForNoEntryAndNoSection(
-                documentAccessor));
+                documentAccessor, dssProperties));
         postRedactionChain
                 .add(new RuleExecutionResponseMarkerForRedactedEntries(
                         documentAccessor));
@@ -315,7 +347,7 @@ public class DocumentRedactorImplTest {
         final String c32WithGeneratedEntryIds = "someDocument";
         final Document documentMock = mock(Document.class);
         final NodeList nodeListMock = mock(NodeList.class);
-        final Stream<Node> nodeStreamMock=mock(Stream.class);
+        final Stream<Node> nodeStreamMock = mock(Stream.class);
         when(documentXmlConverterSpy.loadDocument(c32WithGeneratedEntryIds))
                 .thenReturn(documentMock);
         when(
@@ -384,7 +416,7 @@ public class DocumentRedactorImplTest {
         setValueSetCategories(factModel);
         factModel.setXacmlResult(xacmlResultMock);
         final String result = documentRedactor.redactDocument(c32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertTrue(c32
@@ -428,7 +460,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String redactedC32 = documentRedactor.redactDocument(c32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertNotNull(getSectionElement(c32, PROBLEMS_SECTION));
@@ -485,7 +517,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String redactedC32 = documentRedactor.redactDocument(robustC32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertNotNull(getSectionElement(robustC32, PROBLEMS_SECTION));
@@ -537,7 +569,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String redactedC32 = documentRedactor.redactDocument(c32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertNotNull(getSectionElement(c32, PROBLEMS_SECTION));
@@ -590,7 +622,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String redactedC32 = documentRedactor.redactDocument(robustC32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertNotNull(getSectionElement(robustC32, PROBLEMS_SECTION));
@@ -635,7 +667,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String redactedC32 = documentRedactor.redactDocument(robustC32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertNotNull(getSectionElement(robustC32, PROBLEMS_SECTION));
@@ -680,7 +712,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String redactedC32 = documentRedactor.redactDocument(robustC32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertNotNull(getSectionElement(robustC32, PROBLEMS_SECTION));
@@ -727,7 +759,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String redactedC32 = documentRedactor.redactDocument(robustC32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertNotNull(getSectionElement(robustC32, PROBLEMS_SECTION));
@@ -774,7 +806,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String redactedC32 = documentRedactor.redactDocument(robustC32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertNotNull(getSectionElement(robustC32, PROBLEMS_SECTION));
@@ -820,7 +852,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String redactedC32 = documentRedactor.redactDocument(robustC32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertNotNull(getSectionElement(robustC32, PROBLEMS_SECTION));
@@ -863,7 +895,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String redactedC32 = documentRedactor.redactDocument(remC32,
-                remRuleExecutionContainerActualObj, factModel)
+                remRuleExecutionContainerActualObj, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3)
                 .getRedactedDocument();
 
         // Assert
@@ -925,7 +957,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String redactedC32 = documentRedactor.redactDocument(robustC32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertNotNull(getSectionElement(robustC32, PROBLEMS_SECTION));
@@ -943,9 +975,8 @@ public class DocumentRedactorImplTest {
     @Test(expected = DocumentSegmentationException.class)
     @Ignore("Test must be refactored following the implementation of the new DSS share logic.")
     public void testRedactDocument_Throws_DS4PException() {
-        @SuppressWarnings("unused")
-        final String result = documentRedactor.redactDocument("", null,
-                new FactModel()).getRedactedDocument();
+        @SuppressWarnings("unused") final String result = documentRedactor.redactDocument("", null,
+                new FactModel(), DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
     }
 
     // Sensitivity in container doesn't mean anything anymore.
@@ -971,7 +1002,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String result = documentRedactor.redactDocument(c32,
-                setRuleExecutionContainer_WrongSensitivity(), factModel)
+                setRuleExecutionContainer_WrongSensitivity(), factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3)
                 .getRedactedDocument();
 
         // Assert
@@ -1005,7 +1036,7 @@ public class DocumentRedactorImplTest {
 
         // Act
         final String result = documentRedactor.redactDocument(c32,
-                ruleExecutionContainer, factModel).getRedactedDocument();
+                ruleExecutionContainer, factModel, DOCUMENT_TYPE_CCDA_R_2_1_CCD_V_3).getRedactedDocument();
 
         // Assert
         assertTrue(c32

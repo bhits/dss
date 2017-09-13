@@ -80,7 +80,7 @@
         <commons-lang3.version>3.4</commons-lang3.version>
         <logback.version>1.2.3</logback.version>
         <!-- BRMS Libraries' version -->
-        <drools.version>5.4.0.Final</drools.version>
+        <drools.version>6.5.0.Final</drools.version>
         <docker.maven.version>0.4.3</docker.maven.version>
         <!-- HAPI FHIR version -->
         <hapi.fhir.version>2.2</hapi.fhir.version>
@@ -380,7 +380,7 @@
                                                 <!--<exclude>org.bouncycastle:bcprov-jdk15on:(,1.55]</exclude>-->
                                                 <exclude>org.codehaus.jackson:jackson-mapper-asl:(,1.9.13]</exclude>
                                                 <!-- TODO: enable when JBoss Release repository can be accessible -->
-                                                <!--<exclude>org.drools:drools-core:(,6.2.0.Final)</exclude>-->
+                                                <exclude>org.drools:drools-core:(,6.2.0.Final)</exclude>
                                                 <exclude>org.eclipse.acceleo:org.eclipse.ocl:(,3.4.2.v20140725-2242]</exclude>
                                                 <exclude>org.hibernate:hibernate-entitymanager:(,5.0.12.Final]</exclude>
                                                 <exclude>org.modelmapper:modelmapper:(,0.7.8]</exclude>

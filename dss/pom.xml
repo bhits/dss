@@ -83,7 +83,7 @@
         <drools.version>6.5.0.Final</drools.version>
         <docker.maven.version>0.4.3</docker.maven.version>
         <!-- HAPI FHIR version -->
-        <hapi.fhir.version>2.2</hapi.fhir.version>
+        <hapi.fhir.version>3.0.0</hapi.fhir.version>
         <ph-schematron.version>2.7.1</ph-schematron.version>
         <logstash-logback-encoder.version>4.11</logstash-logback-encoder.version>
     </properties>

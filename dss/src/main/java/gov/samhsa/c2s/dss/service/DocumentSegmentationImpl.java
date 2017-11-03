@@ -179,16 +179,16 @@ public class DocumentSegmentationImpl implements DocumentSegmentation {
         final Charset charset = getCharset(dssRequest.getDocumentEncoding());
         String document = new String(dssRequest.getDocument(), charset);
         final String originalDocument = document;
-        Assert.hasText(document);
+        Assert.hasText(document, "Document must have text");
 
         //Validate Original Document
         final ClinicalDocumentValidationResult originalClinicalDocumentValidationResult =
                 validateOriginalClinicalDocument(dssRequest);
         final String documentType = originalClinicalDocumentValidationResult.getDocumentType();
 
-        Assert.notNull(dssRequest.getXacmlResult());
-        final String enforcementPolicies = marshal(dssRequest.getXacmlResult());
-        Assert.notNull(enforcementPolicies);
+        Assert.notNull(dssRequest.getXacmlResult(), "xacmlResult cannot be null");
+        final String enforcementPolicies = marshal(dssRequest.getXacmlResult().toXacmlResult());
+        Assert.notNull(enforcementPolicies, "enforcementPolicies cannot be created from xacmlResult");
 
         RuleExecutionContainer ruleExecutionContainer = null;
         RedactedDocument redactedDocument = null;

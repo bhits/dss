@@ -58,7 +58,7 @@
         <spring.cloud.version>Dalston.SR3</spring.cloud.version>
         <maven-enforcer-plugin.version>3.0.0-M1</maven-enforcer-plugin.version>
         <!-- TODO: upgrade common-libraries to 2.0.0 when it is released -->
-        <c2s.common-libraries.version>2.0.0-a175</c2s.common-libraries.version>
+        <c2s.common-libraries.version>2.0.0-b178</c2s.common-libraries.version>
         <!-- Third-party library versions -->
         <saxon-HE.version>9.6.0-3</saxon-HE.version>
         <axiom-api.version>1.2.17</axiom-api.version>

@@ -23,19 +23,10 @@ import gov.samhsa.c2s.dss.service.dto.DSSResponseForFhir;
 import gov.samhsa.c2s.dss.service.exception.DocumentSegmentationException;
 import gov.samhsa.c2s.dss.service.fhir.EmbeddedFhirBundleExtractor;
 import gov.samhsa.c2s.dss.service.fhir.FhirBundleRedactor;
-
-import java.util.Optional;
-import java.util.List;
-import java.util.UUID;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.Objects;
-import org.hl7.fhir.dstu3.model.Bundle;
 import org.hl7.fhir.dstu3.model.Base;
-import org.hl7.fhir.dstu3.model.InstantType;
+import org.hl7.fhir.dstu3.model.Bundle;
 import org.hl7.fhir.dstu3.model.Coding;
-
+import org.hl7.fhir.dstu3.model.InstantType;
 import org.hl7.fhir.dstu3.model.Resource;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +36,13 @@ import org.springframework.util.Assert;
 
 import javax.xml.transform.URIResolver;
 import java.io.IOException;
-
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -93,7 +90,7 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
     @Override
     public DSSResponseForFhir segmentFhirBundle(DSSRequestForFhir dssRequestForFhir) {
         try {
-            final XacmlResult xacmlResult = dssRequestForFhir.getXacmlResult();
+            final XacmlResult xacmlResult = dssRequestForFhir.getXacmlResult().toXacmlResult();
             final String xacmlResultXml = marshal(xacmlResult);
             final Optional<URIResolver> uriResolver = Optional
                     .of(new StringURIResolver()
@@ -195,11 +192,11 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
 
             if (isRedactionEnabled(dssRequestForFhir)) {
                 dssRequestForFhir.setFhirStu3Bundle(taggedBundle);
-                Bundle redactedFhirBundle = redactFhirBundle(taggedBundle, dssRequestForFhir.getXacmlResult());
+                Bundle redactedFhirBundle = redactFhirBundle(taggedBundle, dssRequestForFhir.getXacmlResult().toXacmlResult());
                 updateBundleMetaInformation(redactedFhirBundle);
                 updateConfidentiality(redactedFhirBundle);
-               return  DSSResponseForFhir.of(redactedFhirBundle);
-            }else{
+                return DSSResponseForFhir.of(redactedFhirBundle);
+            } else {
                 updateBundleMetaInformation(taggedBundle);
                 return DSSResponseForFhir.of(taggedBundle);
             }
@@ -208,57 +205,58 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
         }
     }
 
-    boolean isRedactionEnabled(DSSRequestForFhir dssRequestForFhir){
+    boolean isRedactionEnabled(DSSRequestForFhir dssRequestForFhir) {
         return dssRequestForFhir.getEnableRedact().orElse(false);
     }
 
-    private Bundle recreateBundle(final String cleanedUpTaggedBundleXml ){
+    private Bundle recreateBundle(final String cleanedUpTaggedBundleXml) {
         return (Bundle) fhirXmlParser.parseResource(cleanedUpTaggedBundleXml);
     }
 
-    private void updateBundleMetaInformation(Bundle fhirStu3Bundle){
+    private void updateBundleMetaInformation(Bundle fhirStu3Bundle) {
         fhirStu3Bundle.setId(UUID.randomUUID().toString());
         fhirStu3Bundle.getMeta().setLastUpdatedElement(InstantType.now());
         fhirStu3Bundle.setTotal(fhirStu3Bundle.getEntry().size());
     }
+
     @Override
-    public Bundle redactFhirBundle(Bundle fhirbundle,XacmlResult xacmlResult) {
+    public Bundle redactFhirBundle(Bundle fhirbundle, XacmlResult xacmlResult) {
 
         List<ValueSetCategoryResponseDto> valueSetCategories = valueSetService.getAllValueSetCategories();
         logger.debug(() -> "Entry Size before redaction: " + fhirbundle.getEntry().size());
         List<Bundle.BundleEntryComponent> entriesToBeRedacted = new ArrayList<>();
         fhirbundle.getEntry().stream()
-                     .forEach(entry ->{
-                         // Determine which security labels are Sensitive
-                         List<Coding> securityLabels = entry.getResource().getMeta().getSecurity();
-                         // If resource is tagged otherwise ignore
-                         if(securityLabels.size() > 0 ){
-                             List<Coding> sensitiveSecurityLabels = getSensitiveSecurityLabels(securityLabels, valueSetCategories);
-                             // If security label is not sensitive ignore resource
-                             if(sensitiveSecurityLabels.size() > 0){
-                                 // Create a list of all the codings that do match the PDP obligations
-                                     List<String> pdpObligations = xacmlResult.getPdpObligations();
-                                 List<Coding> selectCodingForSharing = createListOfCodingsForSharing(sensitiveSecurityLabels,pdpObligations);
+                .forEach(entry -> {
+                    // Determine which security labels are Sensitive
+                    List<Coding> securityLabels = entry.getResource().getMeta().getSecurity();
+                    // If resource is tagged otherwise ignore
+                    if (securityLabels.size() > 0) {
+                        List<Coding> sensitiveSecurityLabels = getSensitiveSecurityLabels(securityLabels, valueSetCategories);
+                        // If security label is not sensitive ignore resource
+                        if (sensitiveSecurityLabels.size() > 0) {
+                            // Create a list of all the codings that do match the PDP obligations
+                            List<String> pdpObligations = xacmlResult.getPdpObligations();
+                            List<Coding> selectCodingForSharing = createListOfCodingsForSharing(sensitiveSecurityLabels, pdpObligations);
 
-                                 // Add entry to list of entries to be redacted if at least one coding does not match the PDP obligation
-                                 if(selectCodingForSharing.size() == 0 ){
-                                     entriesToBeRedacted.add(entry);
-                                 }
-                             }
-                         }
-                     });
+                            // Add entry to list of entries to be redacted if at least one coding does not match the PDP obligation
+                            if (selectCodingForSharing.size() == 0) {
+                                entriesToBeRedacted.add(entry);
+                            }
+                        }
+                    }
+                });
 
         fhirbundle.getEntry().removeAll(entriesToBeRedacted);
         logger.debug(() -> "Entry Size after redaction: " + fhirbundle.getEntry().size());
         return fhirbundle;
     }
 
-    private List<Coding> getSensitiveSecurityLabels(List<Coding> securityLables, List<ValueSetCategoryResponseDto> valueSetCategories){
+    private List<Coding> getSensitiveSecurityLabels(List<Coding> securityLables, List<ValueSetCategoryResponseDto> valueSetCategories) {
         List<Coding> sensitiveSecurityLabels = new ArrayList<>();
-        securityLables.stream().forEach( coding -> {
+        securityLables.stream().forEach(coding -> {
             boolean codingIsSensitive = valueSetCategories.stream().anyMatch(valueSetCategory -> (valueSetCategory.getCode().equals(coding.getCode())
                     && valueSetCategory.getSystem().equals(coding.getSystem())));
-            if(codingIsSensitive){
+            if (codingIsSensitive) {
                 sensitiveSecurityLabels.add(coding);
             }
         });
@@ -266,10 +264,10 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
         return sensitiveSecurityLabels;
     }
 
-    private List<Coding> createListOfCodingsForSharing(List<Coding> sensitiveSecurityLabels, List<String> pdpObligations){
+    private List<Coding> createListOfCodingsForSharing(List<Coding> sensitiveSecurityLabels, List<String> pdpObligations) {
         List<Coding> selectCodingForSharing = new ArrayList<>();
         sensitiveSecurityLabels.stream().forEach(coding -> {
-            if(pdpObligations.contains(coding.getCode())){
+            if (pdpObligations.contains(coding.getCode())) {
                 selectCodingForSharing.add(coding);
             }
         });
@@ -282,81 +280,81 @@ public class FhirBundleSegmentationImpl implements FhirBundleSegmentation {
         // Validate bundle before redaction
         validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().orElse(false), dssRequestForFhir.getFhirStu3Bundle());
 
-        Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir.getFhirStu3Bundle(), dssRequestForFhir.getXacmlResult());
+        Bundle redactedFhirBundle = redactFhirBundle(dssRequestForFhir.getFhirStu3Bundle(), dssRequestForFhir.getXacmlResult().toXacmlResult());
         updateBundleMetaInformation(redactedFhirBundle);
         updateConfidentiality(redactedFhirBundle);
 
         // Validate bundle after redaction
         validateBundleIfEnabled(dssRequestForFhir.getEnableBundleValidation().orElse(false), dssRequestForFhir.getFhirStu3Bundle());
 
-        return  DSSResponseForFhir.of(redactedFhirBundle);
+        return DSSResponseForFhir.of(redactedFhirBundle);
     }
 
-    private void validateBundleIfEnabled(boolean shouldValidate, Bundle fhirStu3Bundle){
-        if(shouldValidate){
+    private void validateBundleIfEnabled(boolean shouldValidate, Bundle fhirStu3Bundle) {
+        if (shouldValidate) {
             assertIsValidateBundle(fhirStu3Bundle);
         }
     }
 
-    private void updateConfidentiality(Bundle fhirStu3Bundle){
-        if(containsCondifidentialityCode(FHIR_CONFIDENTIALITY_CODE_V, fhirStu3Bundle)) {
-            setBundleConfidentiality(FHIR_CONFIDENTIALITY_CODE_V,fhirStu3Bundle);
-        }else if(containsCondifidentialityCode(FHIR_CONFIDENTIALITY_CODE_R, fhirStu3Bundle)){
-            setBundleConfidentiality(FHIR_CONFIDENTIALITY_CODE_R,fhirStu3Bundle);
-        }else if(containsCondifidentialityCode(FHIR_CONFIDENTIALITY_CODE_N, fhirStu3Bundle)){
-            setBundleConfidentiality(FHIR_CONFIDENTIALITY_CODE_N,fhirStu3Bundle);
-        }else{
+    private void updateConfidentiality(Bundle fhirStu3Bundle) {
+        if (containsCondifidentialityCode(FHIR_CONFIDENTIALITY_CODE_V, fhirStu3Bundle)) {
+            setBundleConfidentiality(FHIR_CONFIDENTIALITY_CODE_V, fhirStu3Bundle);
+        } else if (containsCondifidentialityCode(FHIR_CONFIDENTIALITY_CODE_R, fhirStu3Bundle)) {
+            setBundleConfidentiality(FHIR_CONFIDENTIALITY_CODE_R, fhirStu3Bundle);
+        } else if (containsCondifidentialityCode(FHIR_CONFIDENTIALITY_CODE_N, fhirStu3Bundle)) {
+            setBundleConfidentiality(FHIR_CONFIDENTIALITY_CODE_N, fhirStu3Bundle);
+        } else {
             removeBundleConfidentiality(fhirStu3Bundle);
         }
     }
 
-    private void setBundleConfidentiality(String code, Bundle fhirbundle ){
+    private void setBundleConfidentiality(String code, Bundle fhirbundle) {
         fhirbundle.getMeta().getSecurity().stream()
-                            .forEach(coding ->{
-                                if(coding.getSystem().equals(FHIR_SYSTEM_CONFIDENTIALITY)){
-                                    coding.setCode(code);
-                                }
-                            } );
+                .forEach(coding -> {
+                    if (coding.getSystem().equals(FHIR_SYSTEM_CONFIDENTIALITY)) {
+                        coding.setCode(code);
+                    }
+                });
     }
 
-    private void removeBundleConfidentiality(Bundle fhirbundle ){
+    private void removeBundleConfidentiality(Bundle fhirbundle) {
         // Get confidentiality codings
         List<Coding> securityCodings =
                 fhirbundle.getMeta().getSecurity().stream()
-                .filter(coding -> coding.getSystem().equals(FHIR_SYSTEM_CONFIDENTIALITY) )
-                .collect(Collectors.toList());
+                        .filter(coding -> coding.getSystem().equals(FHIR_SYSTEM_CONFIDENTIALITY))
+                        .collect(Collectors.toList());
         fhirbundle.getMeta().getSecurity().removeAll(securityCodings);
     }
 
-    private boolean containsCondifidentialityCode(String code,Bundle fhirbundle  ){
+    private boolean containsCondifidentialityCode(String code, Bundle fhirbundle) {
         return fhirbundle.getEntry().stream()
                 .anyMatch(entry ->
-                    entry.getResource().getMeta().getSecurity().stream()
-                                        .filter(coding -> coding.getSystem().equals(FHIR_SYSTEM_CONFIDENTIALITY) )
-                                        .anyMatch( coding -> coding.getCode().equals(code))
-        );
+                        entry.getResource().getMeta().getSecurity().stream()
+                                .filter(coding -> coding.getSystem().equals(FHIR_SYSTEM_CONFIDENTIALITY))
+                                .anyMatch(coding -> coding.getCode().equals(code))
+                );
     }
 
-    private void assertIsValidateBundle(Bundle fhirbundle){
+    private void assertIsValidateBundle(Bundle fhirbundle) {
         final ValidationResult taggedBundleValidationResult = fhirValidator.validateWithResult(fhirbundle);
-        taggedBundleValidationResult.getMessages().stream().forEach(error ->logger.debug(() -> "Error: " + error.getMessage()));
+        taggedBundleValidationResult.getMessages().stream().forEach(error -> logger.debug(() -> "Error: " + error.getMessage()));
         Assert.isTrue(taggedBundleValidationResult.isSuccessful(), "FHIR validation is failed for the segmented bundle with " + taggedBundleValidationResult.getMessages().size() + " messages");
     }
 
-    private void assertIsSearchSetBundle(Bundle fhirbundle){
+    private void assertIsSearchSetBundle(Bundle fhirbundle) {
         Assert.isTrue(fhirbundle.getType().toCode().equalsIgnoreCase(FHIR_SEARCHSET_TYPE), "Unsupported FHIR bundle type");
     }
 
-    private void assertIsSinglePatientPerBundle(Bundle fhirbundle){
+    private void assertIsSinglePatientPerBundle(Bundle fhirbundle) {
         Set<String> setOfPatientIds = new HashSet<>();
-        fhirbundle.getEntry().stream().forEach(entry ->{
-                Resource resource = entry.getResource();
-                try {
-                    List<Base> subjects = resource.listChildrenByName(FHIR_SUBJECT);
-                    subjects.stream().forEach(subject ->setOfPatientIds.add(subject.getChildByName(FHIR_REFERENCE).getValues().toString()));
-                } catch (FHIRException e) {
-                    logger.warn(() -> e.getMessage());
-                }
+        fhirbundle.getEntry().stream().forEach(entry -> {
+            Resource resource = entry.getResource();
+            try {
+                List<Base> subjects = resource.listChildrenByName(FHIR_SUBJECT);
+                subjects.stream().forEach(subject -> setOfPatientIds.add(subject.getChildByName(FHIR_REFERENCE).getValues().toString()));
+            } catch (FHIRException e) {
+                logger.warn(() -> e.getMessage());
+            }
         });
         Assert.isTrue(setOfPatientIds.size() == 1, "Bundle contains resources for more than one patient.");
     }
